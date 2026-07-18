@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Starting Creator Engine Pro...</title>
+<!-- আপনার ড্যাশবোর্ডের অরিজিনাল ফন্টগুলো ইমপোর্ট করা হলো -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #0A0A0C;
+    --accent-primary: #C99A5B;
+    --text-primary: #F5F5F7;
+    --text-tertiary: #6B6E76;
+  }
+  
+  body {
+    margin: 0; padding: 0; height: 100vh;
+    background: var(--bg-void);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    overflow: hidden; -webkit-app-region: drag;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* 🔴 1. Ambient Background Core Glow */
+  .core-glow {
+    position: absolute;
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, rgba(201, 154, 91, 0.15) 0%, transparent 60%);
+    filter: blur(40px);
+    animation: coreBreathe 4s ease-in-out infinite alternate;
+    z-index: 0;
+  }
+  @keyframes coreBreathe {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.3); opacity: 1; }
+  }
+
+  /* 🔴 2. Cinematic Logo Reveal */
+  .logo-container {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center;
+    animation: floatUp 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .logo {
+    width: 150px; height: auto;
+    opacity: 0;
+    /* ব্লার থেকে ক্লিয়ার হওয়ার ম্যাজিক */
+    animation: revealLogo 2s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.4s; 
+  }
+  @keyframes revealLogo {
+    0% { opacity: 0; filter: blur(25px) drop-shadow(0 0 0 rgba(201,154,91,0)); transform: scale(0.7) translateY(30px); }
+    100% { opacity: 1; filter: blur(0px) drop-shadow(0 0 35px rgba(201,154,91,0.5)); transform: scale(1) translateY(0); }
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(40px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  
+  /* 🔴 3. Premium Sleek Progress Bar */
+  .progress-wrapper {
+    margin-top: 50px; width: 260px;
+    display: flex; flex-direction: column; gap: 14px;
+    z-index: 1; opacity: 0;
+    animation: fadeIn 1s forwards 1.2s; /* লোগো আসার পর লোডিং বার আসবে */
+  }
+  .progress-track {
+    height: 3px; background: rgba(255,255,255,0.06);
+    border-radius: 4px; overflow: hidden; position: relative;
+  }
+  .progress-fill {
+    height: 100%; width: 0%; border-radius: 4px;
+    background: linear-gradient(90deg, transparent, var(--accent-primary), #fff);
+    box-shadow: 0 0 12px var(--accent-primary);
+    animation: loadProgress 3.5s cubic-bezier(0.8, 0, 0.2, 1) forwards 1.4s;
+  }
+  @keyframes loadProgress {
+    0% { width: 0%; }
+    30% { width: 35%; }
+    65% { width: 75%; }
+    100% { width: 100%; }
+  }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  /* 🔴 4. Hacker/Terminal Status Text */
+  .terminal-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--text-tertiary); text-align: center;
+    letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+  <div class="core-glow"></div>
+  
+  <div class="logo-container">
+    <!-- এখানে আপনার লোগোর ফাইলের নাম -->
+    <img src="../icon.ico" class="logo" alt="Creator Engine Pro">
+  </div>
+
+  <div class="progress-wrapper">
+    <div class="progress-track">
+      <div class="progress-fill"></div>
+    </div>
+    <div class="terminal-text" id="status-text">INITIALIZING SYSTEM CORE...</div>
+  </div>
+
+  <script>
+    // 🔴 5. Dynamic Terminal Text Script (Like a real OS booting up)
+    const statusText = document.getElementById('status-text');
+    const stages = [
+      "CONNECTING TO AI NODES...",
+      "WAKING UP WORKER AGENTS...",
+      "SYNCING ORCHESTRATOR...",
+      "CREATOR ENGINE READY."
+    ];
+    
+    let i = 0;
+    setTimeout(() => {
+        const interval = setInterval(() => {
+            if(i < stages.length) {
+                statusText.innerText = stages[i];
+                if(i === stages.length - 1) {
+                    statusText.style.color = "var(--accent-primary)";
+                    statusText.style.textShadow = "0 0 10px rgba(201,154,91,0.6)";
+                }
+                i++;
+            } else {
+                clearInterval(interval);
+            }
+        }, 850); // প্রতি ৮৫০ মিলি-সেকেন্ডে টেক্সট পাল্টাবে
+    }, 1400);
+  </script>
+
+</body>
+</html>

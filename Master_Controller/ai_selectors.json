@@ -1,0 +1,26 @@
+{
+    "chatgpt": {
+        "chatBox": "#prompt-textarea, textarea, div[contenteditable=\"true\"]"
+    },
+    "claude": {
+        "chatBox": "div[contenteditable=\"true\"]"
+    },
+    "deepseek": {
+        "chatBox": "textarea, #chat-input, div[contenteditable=\"true\"]"
+    },
+    "flow": {
+        "chatBox": "div[role=\"textbox\"]"
+    },
+    "gemini": {
+        "chatBox": "rich-textarea, textarea, div[role=\"textbox\"][contenteditable=\"true\"], .ql-editor"
+    },
+    "grok": {
+        "chatBox": "textarea:visible, [contenteditable=\"true\"]:visible"
+    },
+    "perplexity": {
+        "chatBox": "textarea, div[contenteditable=\"true\"]"
+    },
+    "qwen": {
+        "chatBox": "textarea, [contenteditable=\"true\"]"
+    }
+}
