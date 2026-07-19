@@ -134,14 +134,6 @@ svg { display: block; }
 .material-react.whisper.is-near::after,
 .material-react.whisper:hover::after { opacity: 0.7; }
 
-@media (prefers-reduced-motion: reduce) {
-  .ambient-glow, .ambient-glow-secondary, .avatar-wrap::before, .avatar-wrap::after,
-  .strip-dot, .live-dot, .system-dot.live, .content-inner > *,
-  .desktop-ambience, .hero-watermark {
-    animation: none !important;
-  }
-}
-
 /* ==========================================================================
    APP SHELL — permanent baseline.
    ========================================================================== */
@@ -577,20 +569,49 @@ kbd { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 2px 6p
 .network-stage { position: relative; width: 100%; max-width: 1000px; aspect-ratio: 1000 / 560; margin: 0 auto; z-index: 1; }
 .network-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 
-.link-path { fill: none; stroke: var(--border-default); stroke-width: 1.5; opacity: 0.5; transition: opacity var(--duration-emphasis) var(--ease-standard), filter var(--duration-emphasis) var(--ease-standard); }
-.link-path.is-flowing { stroke: var(--link-color, var(--accent-primary)); opacity: 0.95; filter: drop-shadow(0 0 5px var(--link-color, var(--accent-primary))); }
+/* ==========================================================================
+   ORCHESTRATION NETWORK — hero centerpiece (UPDATED WITH EXTREME GLOW)
+   ========================================================================== */
+
+/* মেইন লাইনের স্টাইল এবং গ্লো */
+.link-path { fill: none; stroke: rgba(255, 255, 255, 0.15); stroke-width: 1.5; opacity: 0.4; transition: opacity var(--duration-emphasis) var(--ease-standard), filter var(--duration-emphasis) var(--ease-standard); }
+
+/* লাইন যখন অ্যাক্টিভ হবে (ডাবল গ্লো ইফেক্ট দেওয়া হয়েছে) */
+.link-path.is-flowing { 
+    stroke: var(--link-color, var(--accent-primary)); 
+    opacity: 1; 
+    filter: drop-shadow(0 0 6px var(--link-color, var(--accent-primary))) drop-shadow(0 0 12px var(--link-color, var(--accent-primary))); 
+}
 .link-path.is-dim { opacity: 0.16; }
 
+/* Prompt Construction AI এর বন্ড লাইন */
 .link-bond { fill: none; stroke: var(--accent-primary); stroke-width: 1.5; opacity: 0.3; animation: bondShimmer 3.6s var(--ease-standard) infinite; }
-.link-bond.is-flowing { animation-duration: 1.1s; opacity: 0.75; filter: drop-shadow(0 0 4px var(--accent-primary-muted)); }
+.link-bond.is-flowing { 
+    animation-duration: 1.1s; 
+    opacity: 1; 
+    stroke: var(--accent-primary);
+    filter: drop-shadow(0 0 6px var(--accent-primary)) drop-shadow(0 0 12px var(--accent-primary)); 
+}
 .link-bond.is-dim { opacity: 0.08; animation: none; }
 @keyframes bondShimmer { 0%, 100% { opacity: 0.22; } 50% { opacity: 0.55; } }
 
+/* Final Report AI এর রিটার্ন লাইন */
 .link-loop { fill: none; stroke: var(--border-subtle); stroke-width: 1.5; stroke-dasharray: 1 7; stroke-linecap: round; opacity: 0.6; transition: opacity var(--duration-emphasis) var(--ease-standard), stroke var(--duration-emphasis) var(--ease-standard); }
-.link-loop.is-flowing { stroke: var(--accent-primary); stroke-dasharray: none; opacity: 0.85; filter: drop-shadow(0 0 6px var(--accent-primary-muted)); }
-.link-loop.is-dim { opacity: 0.16; }
+.link-loop.is-flowing { 
+    stroke: var(--accent-primary); 
+    stroke-dasharray: none; 
+    opacity: 1; 
+    filter: drop-shadow(0 0 6px var(--accent-primary)) drop-shadow(0 0 12px var(--accent-primary)); 
+}
+.link-loop.is-dim { opacity: 0.15; }
 
-.link-particle { opacity: 0; transition: opacity 220ms var(--ease-standard); }
+/* রানিং ডটগুলো যেন লাইনের কালার অনুযায়ী উজ্জ্বলভাবে গ্লো করে */
+.link-particle { 
+    opacity: 0; 
+    fill: var(--link-color, var(--accent-primary));
+    filter: drop-shadow(0 0 6px var(--link-color, var(--accent-primary))) drop-shadow(0 0 10px var(--link-color, var(--accent-primary)));
+    transition: opacity 220ms var(--ease-standard); 
+}
 .link-particle.is-visible { opacity: 1; }
 
 /* ---- Node scaffold ---- */
@@ -785,14 +806,6 @@ kbd { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 2px 6p
 @media (max-width: 620px) {
   .prompt-node .net-node-label, .worker-node .net-node-label strong { display: none; }
   .stats-grid { grid-template-columns: 1fr; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .core-ring::before, .core-ring--outer::before, .core-glow, .orch-node .node-orb, .core-mark,
-  .net-node.is-thinking .node-orb, .link-particle, .link-bond,
-  .ai-card.is-reconnecting .reconnect-label, .composer-send.is-sent, .ai-switch-thumb {
-    animation: none !important;
-  }
 }
 
 /* ==========================================================================
@@ -1648,7 +1661,7 @@ kbd { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 2px 6p
 </div>
 
 <script>
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduceMotion = false;
 
 // ============ Sidebar collapse ============
 (function setupSidebar() {
@@ -2062,17 +2075,20 @@ function escapeHtml(s) {
 }
 function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 
+// ১. ইনপুট বক্স খালি থাকলেও অ্যানিমেশন শুরু করার জন্য:
 function sendObjective() {
-  const text = composerInput.value.trim();
-  if (!text) return;
   const requested = getRequestedWorker();
-  runPipelineCycle(requested, text);
+  runPipelineCycle(requested, "Objective dispatched by Administrator");
+  
   composerInput.value = '';
   composerInput.style.height = 'auto';
   composerSend.classList.remove('is-sent');
   void composerSend.offsetWidth;
   composerSend.classList.add('is-sent');
 }
+
+// ঠিক করে এভাবে দিন:
+function scheduleNext(fn, delay) { pendingTimers.push(setTimeout(fn, delay)); }
 composerSend.addEventListener('click', sendObjective);
 composerInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendObjective(); }
@@ -2108,7 +2124,7 @@ window.logLine = logLine;
 // ============ Orchestration pipeline engine ============
 let pendingTimers = [];
 function clearPipelineTimers() { pendingTimers.forEach((t) => clearTimeout(t)); pendingTimers = []; }
-function scheduleNext(fn, delay) { pendingTimers.push(setTimeout(fn, reduceMotion ? Math.min(delay, 150) : delay)); }
+function scheduleNext(fn, delay) { pendingTimers.push(setTimeout(fn, 150)); }
 
 function pulseNode(id, on) {
   const el = document.getElementById(`node-${id}`);
@@ -2220,6 +2236,22 @@ function runPipelineCycle(forcedWorkerId, objectiveText) {
 
   scheduleNext(() => runPipelineCycle(), 20000);
 }
+
+// 🔴 MAGIC FIX: CSS-এর অ্যানিমেশন ব্লকার ধ্বংস করার অ্যান্টি-ভাইরাস!
+setTimeout(() => {
+    for (let i = 0; i < document.styleSheets.length; i++) {
+        let sheet = document.styleSheets[i];
+        try {
+            let rules = sheet.cssRules || sheet.rules;
+            for (let j = rules.length - 1; j >= 0; j--) {
+                // অ্যানিমেশন ব্লক করা মিডিয়া কোয়েরিগুলো খুঁজে ডিলিট করে দেবে
+                if (rules[j].media && rules[j].media.mediaText.includes('prefers-reduced-motion')) {
+                    sheet.deleteRule(j);
+                }
+            }
+        } catch(e) {}
+    }
+}, 50);
 
 </script>
 <script src="ui_controller.js"></script>

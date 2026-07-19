@@ -2,136 +2,1422 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Starting Creator Engine Pro...</title>
-<!-- আপনার ড্যাশবোর্ডের অরিজিনাল ফন্টগুলো ইমপোর্ট করা হলো -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Engine Pro — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg-void: #0A0A0C;
-    --accent-primary: #C99A5B;
-    --text-primary: #F5F5F7;
-    --text-tertiary: #6B6E76;
-  }
-  
-  body {
-    margin: 0; padding: 0; height: 100vh;
-    background: var(--bg-void);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    overflow: hidden; -webkit-app-region: drag;
-    font-family: 'Inter', sans-serif;
-  }
 
-  /* 🔴 1. Ambient Background Core Glow */
-  .core-glow {
-    position: absolute;
-    width: 350px; height: 350px;
-    background: radial-gradient(circle, rgba(201, 154, 91, 0.15) 0%, transparent 60%);
-    filter: blur(40px);
-    animation: coreBreathe 4s ease-in-out infinite alternate;
-    z-index: 0;
-  }
-  @keyframes coreBreathe {
-    0% { transform: scale(0.8); opacity: 0.5; }
-    100% { transform: scale(1.3); opacity: 1; }
-  }
+/* ==========================================================================
+   DESIGN TOKENS — Creator Engine Pro Design System Freeze v1.0 — unchanged.
+   ========================================================================== */
+:root {
+  --bg-void: #0A0A0C;
+  --bg-base: #101114;
+  --bg-surface: #16171B;
+  --bg-elevated: #1C1E23;
 
-  /* 🔴 2. Cinematic Logo Reveal */
-  .logo-container {
-    position: relative; z-index: 1;
-    display: flex; flex-direction: column; align-items: center;
-    animation: floatUp 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  .logo {
-    width: 150px; height: auto;
-    opacity: 0;
-    /* ব্লার থেকে ক্লিয়ার হওয়ার ম্যাজিক */
-    animation: revealLogo 2s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.4s; 
-  }
-  @keyframes revealLogo {
-    0% { opacity: 0; filter: blur(25px) drop-shadow(0 0 0 rgba(201,154,91,0)); transform: scale(0.7) translateY(30px); }
-    100% { opacity: 1; filter: blur(0px) drop-shadow(0 0 35px rgba(201,154,91,0.5)); transform: scale(1) translateY(0); }
-  }
-  @keyframes floatUp {
-    0% { transform: translateY(40px); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
-  }
-  
-  /* 🔴 3. Premium Sleek Progress Bar */
-  .progress-wrapper {
-    margin-top: 50px; width: 260px;
-    display: flex; flex-direction: column; gap: 14px;
-    z-index: 1; opacity: 0;
-    animation: fadeIn 1s forwards 1.2s; /* লোগো আসার পর লোডিং বার আসবে */
-  }
-  .progress-track {
-    height: 3px; background: rgba(255,255,255,0.06);
-    border-radius: 4px; overflow: hidden; position: relative;
-  }
-  .progress-fill {
-    height: 100%; width: 0%; border-radius: 4px;
-    background: linear-gradient(90deg, transparent, var(--accent-primary), #fff);
-    box-shadow: 0 0 12px var(--accent-primary);
-    animation: loadProgress 3.5s cubic-bezier(0.8, 0, 0.2, 1) forwards 1.4s;
-  }
-  @keyframes loadProgress {
-    0% { width: 0%; }
-    30% { width: 35%; }
-    65% { width: 75%; }
-    100% { width: 100%; }
-  }
-  @keyframes fadeIn { to { opacity: 1; } }
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-default: rgba(255,255,255,0.10);
+  --border-strong: rgba(255,255,255,0.16);
 
-  /* 🔴 4. Hacker/Terminal Status Text */
-  .terminal-text {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--text-tertiary); text-align: center;
-    letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600;
+  --text-primary: #F5F5F7;
+  --text-secondary: #A0A3AD;
+  --text-tertiary: #6B6E76;
+  --text-disabled: #45474D;
+
+  --accent-primary: #C99A5B;
+  --accent-primary-hover: #D9AD72;
+  --accent-primary-muted: rgba(201,154,91,0.12);
+
+  --color-success: #6FAE8C;
+  --color-warning: #D08B3E;
+  --color-error: #E1685F;
+  --color-info: #6F93C9;
+
+  --ai-chatgpt: #4FA98C;
+  --ai-gemini: #4A87D4;
+  --ai-claude: #C4634F;
+  --ai-deepseek: #5A5FCB;
+  --ai-qwen: #8A63D6;
+  --ai-perplexity: #3FAFAE;
+  --ai-grok: #8A8D96;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px;
+
+  --elevation-1: 0 1px 2px rgba(0,0,0,0.4);
+  --elevation-2: 0 8px 24px rgba(0,0,0,0.45);
+  --elevation-3: 0 16px 48px rgba(0,0,0,0.55);
+
+  --glass-subtle-blur: 12px;
+  --glass-subtle-fill: rgba(255,255,255,0.03);
+  --glass-heavy-blur: 32px;
+  --glass-heavy-fill: rgba(255,255,255,0.07);
+
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-micro: 120ms;
+  --duration-standard: 200ms;
+  --duration-emphasis: 360ms;
+
+  --titlebar-h: 40px;
+  --topbar-h: 56px;
+  --sidebar-w: 240px;
+  --sidebar-w-collapsed: 72px;
+}
+
+/* ==========================================================================
+   RESET
+   ========================================================================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+button { font-family: inherit; border: none; background: none; color: inherit; cursor: pointer; }
+input { font-family: inherit; color: inherit; }
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+svg { display: block; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; border-radius: var(--radius-sm); }
+
+.text-display { font-size: 32px; line-height: 40px; font-weight: 600; }
+.text-title { font-size: 24px; line-height: 32px; font-weight: 600; }
+.text-heading { font-size: 18px; line-height: 26px; font-weight: 600; }
+.text-subheading { font-size: 15px; line-height: 22px; font-weight: 600; }
+.text-body { font-size: 13px; line-height: 20px; font-weight: 400; }
+.text-body-emphasis { font-size: 13px; line-height: 20px; font-weight: 500; }
+.text-caption { font-size: 12px; line-height: 16px; font-weight: 400; }
+.text-label { font-size: 11px; line-height: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ==========================================================================
+   MATERIAL PRESENCE — shared cursor-reactive surface system.
+   Two tiers, both composed only from existing tokens:
+   - full: genuinely interactive surfaces (nav, module cards, primary button)
+   - whisper: informational surfaces that should still feel present (stat
+     cards, list rows) without implying they're clickable
+   ========================================================================== */
+.material-react {
+  position: relative;
+  overflow: hidden;
+}
+.material-react::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%), var(--border-default), transparent 70%);
+  opacity: 0;
+  transition: opacity var(--duration-standard) var(--ease-standard);
+  pointer-events: none;
+}
+.material-react.is-near::after,
+.material-react:hover::after,
+.material-react:focus-visible::after { opacity: 1; }
+
+.material-react.whisper::after {
+  background: radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), var(--border-subtle), transparent 70%);
+}
+.material-react.whisper.is-near::after,
+.material-react.whisper:hover::after { opacity: 0.7; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-glow, .ambient-glow-secondary, .avatar-wrap::before, .avatar-wrap::after,
+  .strip-dot, .live-dot, .system-dot.live, .content-inner > *,
+  .desktop-ambience, .hero-watermark {
+    animation: none !important;
   }
+}
+
+/* ==========================================================================
+   APP SHELL — permanent baseline.
+   ========================================================================== */
+.app { height: 100vh; display: flex; flex-direction: column; background: var(--bg-void); }
+
+/* ---- Window Chrome ---- */
+.titlebar {
+  height: var(--titlebar-h);
+  min-height: var(--titlebar-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--space-2) 0 var(--space-4);
+  background-image: linear-gradient(100deg, rgba(255,255,255,0.035) 0%, transparent 35%);
+  background-color: var(--glass-subtle-fill);
+  backdrop-filter: blur(var(--glass-subtle-blur));
+  -webkit-backdrop-filter: blur(var(--glass-subtle-blur));
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: inset 0 1px 0 var(--border-default);
+  -webkit-app-region: drag;
+  user-select: none;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.titlebar-brand { display: flex; align-items: center; gap: var(--space-2); }
+.app-mark { width: 18px; height: 18px; color: var(--text-secondary); flex-shrink: 0; }
+.app-name { font-size: 12px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0.01em; }
+.titlebar-controls { display: flex; align-items: center; gap: 2px; -webkit-app-region: no-drag; }
+.win-btn {
+  width: 32px; height: 24px; display: flex; align-items: center; justify-content: center;
+  color: var(--text-tertiary); border-radius: var(--radius-sm);
+  transition: background var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard);
+}
+.win-btn svg { width: 12px; height: 12px; }
+.win-btn:hover { background: var(--border-subtle); color: var(--text-primary); }
+.win-btn--close:hover { background: var(--color-error); color: #fff; }
+
+/* ---- App body ---- */
+.app-body { flex: 1; display: flex; min-height: 0; position: relative; z-index: 1; }
+
+/* ---- Desktop Ambience — whole-window atmospheric layer, independent of cursor ---- */
+.desktop-ambience {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(1100px 750px at 18% 8%, var(--accent-primary) 0%, transparent 55%),
+    radial-gradient(900px 650px at 88% 95%, var(--accent-primary) 0%, transparent 55%);
+  opacity: 0.022;
+  animation: desktopBreathe 26s var(--ease-standard) infinite;
+}
+@keyframes desktopBreathe { 0%, 100% { opacity: 0.014; } 50% { opacity: 0.03; } }
+
+/* ---- Sidebar ---- */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background-image:
+    radial-gradient(280px circle at 50% var(--sidebar-light-y, 15%), rgba(255,255,255,0.045), transparent 72%),
+    linear-gradient(115deg, rgba(255,255,255,0.03) 0%, transparent 22%, transparent 80%, rgba(255,255,255,0.02) 100%),
+    linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 30%);
+  background-color: var(--glass-subtle-fill);
+  backdrop-filter: blur(var(--glass-subtle-blur));
+  -webkit-backdrop-filter: blur(var(--glass-subtle-blur));
+  border-right: 1px solid var(--border-subtle);
+  padding: var(--space-5) var(--space-3);
+  transition: width var(--duration-emphasis) var(--ease-standard);
+}
+.sidebar.collapsed { width: var(--sidebar-w-collapsed); }
+
+.sidebar-nav { display: flex; flex-direction: column; gap: var(--space-1); }
+.sidebar-spacer { flex: 1; }
+.sidebar-footer { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.nav-item {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: background var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard);
+}
+.nav-item.is-near { background: var(--border-subtle); }
+.nav-item:hover { background: var(--border-subtle); color: var(--text-primary); }
+.nav-item--active { background: var(--accent-primary-muted); color: var(--accent-primary); }
+.nav-item--active:hover { background: var(--accent-primary-muted); color: var(--accent-primary); }
+.nav-icon { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-icon svg { width: 100%; height: 100%; }
+.nav-label { font-size: 13px; font-weight: 500; opacity: 1; transition: opacity var(--duration-standard) var(--ease-standard); }
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .profile-info { opacity: 0; width: 0; }
+
+.sidebar.collapsed .nav-item:hover::before,
+.sidebar.collapsed .sidebar-profile:hover .profile-trigger::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(var(--sidebar-w-collapsed) - var(--space-3) + 12px);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--elevation-2);
+  white-space: nowrap;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.sidebar-collapse {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 32px;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  transition: background var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard);
+}
+.sidebar-collapse:hover { background: var(--border-subtle); color: var(--text-primary); }
+.sidebar-collapse svg { width: 16px; height: 16px; transition: transform var(--duration-standard) var(--ease-standard); }
+.sidebar.collapsed .sidebar-collapse svg { transform: rotate(180deg); }
+
+/* ---- Profile (permanent, bottom of sidebar) ---- */
+.sidebar-profile { position: relative; }
+.profile-trigger {
+  position: relative;
+  display: flex; align-items: center; gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-micro) var(--ease-standard);
+}
+.profile-trigger:hover { background: var(--border-subtle); }
+
+.avatar-wrap { position: relative; width: 32px; height: 32px; flex-shrink: 0; }
+.avatar-wrap::before {
+  content: '';
+  position: absolute; inset: -4px;
+  border-radius: var(--radius-full);
+  background: conic-gradient(from 0deg, var(--accent-primary) 0%, transparent 30%, transparent 70%, var(--accent-primary) 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  animation: auraRotate 11s linear infinite;
+}
+.avatar-wrap::after {
+  content: '';
+  position: absolute; inset: -9px;
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle, var(--accent-primary) 0%, transparent 72%);
+  opacity: 0.08;
+  animation: pulseDot 6s var(--ease-standard) infinite;
+  pointer-events: none;
+}
+.avatar {
+  position: relative; z-index: 1;
+  width: 32px; height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--bg-base);
+  color: var(--accent-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600;
+}
+@keyframes auraRotate { to { transform: rotate(360deg); } }
+
+.profile-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; min-width: 0; text-align: left; }
+.profile-name { font-size: 13px; font-weight: 500; color: var(--text-primary); white-space: nowrap; }
+.profile-status { color: var(--color-success); white-space: nowrap; }
+.profile-trigger .chev { width: 14px; height: 14px; color: var(--text-tertiary); flex-shrink: 0; transition: opacity var(--duration-standard) var(--ease-standard); }
+.sidebar.collapsed .profile-trigger .chev { opacity: 0; width: 0; }
+
+/* ---- Main / Top Bar ---- */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--bg-base); }
+
+.topbar {
+  height: var(--topbar-h); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--space-6);
+  background: var(--glass-subtle-fill);
+  backdrop-filter: blur(var(--glass-subtle-blur));
+  -webkit-backdrop-filter: blur(var(--glass-subtle-blur));
+  border-bottom: 1px solid var(--border-subtle);
+}
+.page-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.topbar-right { display: flex; align-items: center; gap: var(--space-3); }
+
+.search-field {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: 0 var(--space-3); height: 34px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  min-width: 240px;
+  transition: border-color var(--duration-micro) var(--ease-standard), box-shadow var(--duration-micro) var(--ease-standard);
+}
+.search-field:hover { border-color: var(--border-strong); }
+.search-field:focus-within { border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-primary-muted); }
+.search-field svg { width: 16px; height: 16px; color: var(--text-tertiary); flex-shrink: 0; transition: color var(--duration-micro) var(--ease-standard); }
+.search-field:focus-within svg { color: var(--accent-primary); }
+.search-input { background: none; border: none; outline: none; font-size: 13px; color: var(--text-primary); flex: 1; min-width: 0; }
+.search-input::placeholder { color: var(--text-tertiary); }
+kbd { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--bg-elevated); color: var(--text-tertiary); border: 1px solid var(--border-default); flex-shrink: 0; }
+
+.topbar-item { position: relative; display: flex; align-items: center; }
+.icon-btn {
+  position: relative; width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm); color: var(--text-secondary);
+  transition: background var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard), transform var(--duration-micro) var(--ease-standard);
+}
+.icon-btn:hover { background: var(--border-subtle); color: var(--text-primary); }
+.icon-btn:active { transform: scale(0.94); }
+.icon-btn svg { width: 18px; height: 18px; }
+.badge-dot { position: absolute; top: 7px; right: 7px; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--color-error); border: 1.5px solid var(--bg-base); }
+
+/* ---- Popovers ---- */
+.popover {
+  position: absolute; min-width: 220px;
+  background: var(--glass-heavy-fill);
+  backdrop-filter: blur(var(--glass-heavy-blur));
+  -webkit-backdrop-filter: blur(var(--glass-heavy-blur));
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-3), inset 0 1px 0 var(--border-default);
+  padding: var(--space-2);
+  opacity: 0; visibility: hidden;
+  transition: opacity var(--duration-standard) var(--ease-standard), transform var(--duration-standard) var(--ease-standard), visibility var(--duration-standard);
+  z-index: 100;
+}
+.popover.open { opacity: 1; visibility: visible; }
+.popover--down { top: calc(100% + 8px); right: 0; transform: translateY(-4px); }
+.popover--down.open { transform: translateY(0); }
+.popover--up { bottom: calc(100% + 8px); left: 0; transform: translateY(4px); }
+.popover--up.open { transform: translateY(0); }
+
+.popover-item {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-3); border-radius: var(--radius-sm);
+  font-size: 13px; color: var(--text-secondary); width: 100%; text-align: left;
+  transition: background var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard);
+}
+.popover-item:hover { background: var(--border-subtle); color: var(--text-primary); }
+.popover-item svg { width: 16px; height: 16px; }
+.popover-empty { padding: var(--space-5) var(--space-3); text-align: center; color: var(--text-tertiary); font-size: 13px; }
+.popover-divider { height: 1px; background: var(--border-subtle); margin: var(--space-2) 0; }
+
+/* ==========================================================================
+   CONTENT — Dashboard-specific
+   ========================================================================== */
+.content { flex: 1; overflow-y: auto; }
+.content-inner { position: relative; max-width: 1800px; margin: 0 auto; padding: var(--space-6); }
+.content-inner > * { animation: fadeInUp var(--duration-emphasis) var(--ease-standard) both; }
+.content-inner > *:nth-child(1) { animation-delay: 0ms; }
+.content-inner > *:nth-child(2) { animation-delay: 60ms; }
+.content-inner > *:nth-child(3) { animation-delay: 120ms; }
+.content-inner > *:nth-child(4) { animation-delay: 180ms; }
+.content-inner > *:nth-child(5) { animation-delay: 240ms; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---- Hero ---- */
+.hero { position: relative; padding: var(--space-8) 0 var(--space-7); overflow: hidden; }
+.ambient-glow {
+  position: absolute; top: -250px; left: calc(50% - 450px);
+  width: 900px; height: 500px;
+  background: radial-gradient(ellipse at center, var(--accent-primary) 0%, transparent 70%);
+  opacity: 0.06; pointer-events: none; filter: blur(60px);
+  will-change: transform;
+  animation: glowBreathe 10s var(--ease-standard) infinite;
+  z-index: 0;
+}
+.ambient-glow-secondary {
+  position: absolute; top: -180px; left: calc(50% - 200px);
+  width: 500px; height: 340px;
+  background: radial-gradient(ellipse at center, var(--accent-primary) 0%, transparent 70%);
+  opacity: 0.04; pointer-events: none; filter: blur(50px);
+  animation: glowBreathe 13s var(--ease-standard) infinite 1.5s;
+  z-index: 0;
+}
+@keyframes glowBreathe { 0%, 100% { opacity: 0.045; } 50% { opacity: 0.09; } }
+
+.hero-content { position: relative; z-index: 1; }
+.hero-watermark {
+  position: absolute;
+  top: 50%; right: -70px;
+  transform: translateY(-50%);
+  width: 380px; height: 380px;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+  animation: watermarkRotate 90s linear infinite;
+}
+.hero-watermark svg { width: 100%; height: 100%; }
+@keyframes watermarkRotate { to { transform: translateY(-50%) rotate(360deg); } }
+.hero-eyebrow { color: var(--accent-primary); margin-bottom: var(--space-4); }
+.hero-headline { color: var(--text-primary); margin-bottom: var(--space-3); }
+.hero-subtitle { color: var(--text-secondary); font-size: 15px; line-height: 22px; max-width: 560px; margin-bottom: var(--space-6); }
+.hero-actions { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-7); }
+
+.btn {
+  position: relative; overflow: hidden;
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  height: 40px; padding: 0 var(--space-5);
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  transition: background var(--duration-micro) var(--ease-standard), border-color var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard), transform var(--duration-micro) var(--ease-standard);
+}
+.btn svg { width: 16px; height: 16px; position: relative; z-index: 1; }
+.btn span { position: relative; z-index: 1; }
+.btn:active { transform: scale(0.97); }
+.btn--primary { background: var(--accent-primary); color: var(--bg-void); }
+.btn--primary:hover { background: var(--accent-primary-hover); }
+.btn--primary.material-react::after { background: radial-gradient(140px circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.35), transparent 70%); }
+.btn--secondary { background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-primary); height: 34px; padding: 0 var(--space-4); }
+.btn--secondary:hover { border-color: var(--border-strong); background: var(--bg-elevated); }
+.btn--tertiary { color: var(--accent-primary); height: auto; padding: 0; }
+.btn--tertiary:hover { color: var(--accent-primary-hover); }
+
+.systems-strip { display: flex; align-items: center; gap: var(--space-3); }
+.systems-strip-label { color: var(--text-tertiary); }
+.systems-strip-dots { display: flex; align-items: center; gap: 7px; }
+.strip-dot { width: 7px; height: 7px; border-radius: var(--radius-full); animation: pulseDot 4s var(--ease-standard) infinite; }
+.strip-dot.idle { opacity: 0.35; animation: none; }
+@keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* ---- Quick actions ---- */
+.quick-actions { margin-bottom: var(--space-7); }
+.quick-actions-row { display: flex; gap: var(--space-3); }
+
+/* ---- Sections ---- */
+.section { margin-bottom: var(--space-7); }
+.section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-4); }
+.section-header .live-dot { display: inline-block; width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--color-success); margin-right: var(--space-2); animation: pulseDot 3s var(--ease-standard) infinite; }
+
+/* ---- Stat cards (whisper tier — informational, not clickable) ---- */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5); }
+.stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-1), inset 0 1px 0 var(--border-subtle);
+  padding: var(--space-5);
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform var(--duration-standard) var(--ease-standard);
+  will-change: transform;
+}
+.icon-chip { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--accent-primary-muted); color: var(--accent-primary); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); position: relative; z-index: 1; }
+.icon-chip svg { width: 18px; height: 18px; }
+.stat-value { color: var(--text-primary); position: relative; z-index: 1; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 13px; color: var(--text-secondary); margin-top: var(--space-1); position: relative; z-index: 1; }
+.stat-delta { display: flex; align-items: center; gap: 4px; font-size: 12px; margin-top: var(--space-3); position: relative; z-index: 1; }
+.stat-delta.positive { color: var(--color-success); }
+.stat-delta.neutral { color: var(--text-tertiary); }
+.stat-delta svg { width: 12px; height: 12px; }
+
+/* ---- Module cards (full tier + restrained 3D tilt) ---- */
+.modules-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
+.module-card {
+  display: flex; flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-1), inset 0 1px 0 var(--border-subtle);
+  padding: var(--space-5);
+  cursor: pointer;
+  will-change: transform;
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(0);
+  transition: transform var(--duration-standard) var(--ease-standard), box-shadow var(--duration-standard) var(--ease-standard), border-color var(--duration-standard) var(--ease-standard);
+}
+.module-card.is-near { border-color: var(--border-default); box-shadow: var(--elevation-2), inset 0 1px 0 var(--border-default); }
+.module-card:hover { border-color: var(--border-default); box-shadow: var(--elevation-2), inset 0 1px 0 var(--border-default); transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(-2px); }
+.module-icon-chip { width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--accent-primary-muted); color: var(--accent-primary); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-4); position: relative; z-index: 1; transition: background var(--duration-standard) var(--ease-standard), color var(--duration-standard) var(--ease-standard); }
+.module-icon-chip svg { width: 20px; height: 20px; }
+.module-card:hover .module-icon-chip, .module-card.is-near .module-icon-chip { background: var(--accent-primary); color: var(--bg-void); }
+.module-title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-1); position: relative; z-index: 1; }
+.module-desc { font-size: 13px; color: var(--text-secondary); line-height: 20px; flex: 1; position: relative; z-index: 1; }
+.module-footer { display: flex; align-items: center; gap: 4px; margin-top: var(--space-4); font-size: 12px; font-weight: 500; color: var(--accent-primary); opacity: 0; transform: translateX(-4px); transition: opacity var(--duration-standard) var(--ease-standard), transform var(--duration-standard) var(--ease-standard); position: relative; z-index: 1; }
+.module-footer svg { width: 14px; height: 14px; }
+.module-card:hover .module-footer, .module-card.is-near .module-footer { opacity: 1; transform: translateX(0); }
+
+/* ---- Lower grid: activity + system status (whisper tier) ---- */
+.lower-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-5); }
+.list-panel { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: var(--elevation-1), inset 0 1px 0 var(--border-subtle); overflow: hidden; }
+
+.activity-row, .system-row {
+  position: relative;
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--duration-micro) var(--ease-standard);
+}
+.activity-row:last-child, .system-row:last-child { border-bottom: none; }
+.activity-row:hover, .system-row:hover { background: var(--bg-elevated); }
+
+.system-dot { width: 8px; height: 8px; border-radius: var(--radius-full); flex-shrink: 0; position: relative; z-index: 1; }
+.system-dot.live { animation: pulseDot 4s var(--ease-standard) infinite; }
+.activity-body { flex: 1; min-width: 0; position: relative; z-index: 1; }
+.activity-system { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.activity-text { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activity-time { font-size: 12px; color: var(--text-tertiary); flex-shrink: 0; position: relative; z-index: 1; }
+
+.system-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text-primary); position: relative; z-index: 1; }
+.status-pill { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: var(--radius-full); position: relative; z-index: 1; }
+.status-pill.connected { color: var(--color-success); background: rgba(111,174,140,0.12); }
+.status-pill.idle { color: var(--text-tertiary); background: var(--border-subtle); }
+
 </style>
 </head>
 <body>
+<!-- ==========================================================================
+     CINEMATIC BOOT SEQUENCE — Creator Engine Pro
+     Plays once per app session, then removes itself. Uses only the design
+     tokens already defined in :root — no new colors, no new fonts.
+     ========================================================================== -->
+<style>
+  /* ---- scoping note: every rule below is namespaced under .boot-sequence /
+         .boot-* so it cannot collide with existing app styles ---- */
 
-  <div class="core-glow"></div>
-  
-  <div class="logo-container">
-    <!-- এখানে আপনার লোগোর ফাইলের নাম -->
-    <img src="../icon.ico" class="logo" alt="Creator Engine Pro">
-  </div>
+  .boot-sequence {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-void);
+    overflow: hidden;
+    -webkit-app-region: drag;
+    user-select: none;
+    cursor: default;
+  }
 
-  <div class="progress-wrapper">
-    <div class="progress-track">
-      <div class="progress-fill"></div>
+  /* ---- backdrop layers ---- */
+  .boot-grid {
+    position: absolute; inset: -2px;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--border-subtle) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+    background-size: 42px 42px;
+    opacity: 0.35;
+    -webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 0%, transparent 78%);
+    mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, #000 0%, transparent 78%);
+    animation: bootGridDrift 40s linear infinite;
+  }
+  @keyframes bootGridDrift { to { background-position: 42px 84px, 42px 84px; } }
+
+  .boot-particles { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+  .boot-particle {
+    position: absolute;
+    width: var(--size, 2px); height: var(--size, 2px);
+    border-radius: var(--radius-full);
+    background: var(--accent-primary);
+    opacity: 0;
+    box-shadow: 0 0 6px 1px rgba(201,154,91,0.55);
+    animation: bootParticleFloat var(--dur, 9s) ease-in-out var(--delay, 0s) infinite;
+  }
+  @keyframes bootParticleFloat {
+    0%   { opacity: 0; transform: translate3d(0, 12px, 0); }
+    12%  { opacity: 0.55; }
+    50%  { opacity: 0.85; transform: translate3d(var(--drift, 6px), -60px, 0); }
+    88%  { opacity: 0.2; }
+    100% { opacity: 0; transform: translate3d(calc(var(--drift, 6px) * 2), -130px, 0); }
+  }
+
+  .boot-vignette {
+    position: absolute; inset: 0; z-index: 5; pointer-events: none;
+    background: radial-gradient(ellipse 60% 55% at 50% 48%, transparent 45%, var(--bg-void) 100%);
+  }
+
+  /* ---- centered stage ---- */
+  .boot-stage {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+  }
+
+  /* ---- emblem cluster ---- */
+  .boot-mark-wrap {
+    position: relative;
+    width: 220px; height: 220px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: var(--space-7);
+  }
+
+  .boot-rings-wrap {
+    position: absolute; inset: 0;
+    opacity: 0; transform: scale(0.82);
+    animation: bootRingsIn 900ms var(--ease-standard) forwards;
+    animation-delay: 0.05s;
+  }
+  @keyframes bootRingsIn { to { opacity: 1; transform: scale(1); } }
+  .boot-rings { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .boot-ring { fill: none; stroke: var(--accent-primary); }
+  .ring-outer { stroke-opacity: 0.14; stroke-width: 1; }
+  .ring-spin-cw { transform-origin: 100px 100px; animation: bootRingSpin 22s linear infinite; }
+  .ring-dash { stroke-opacity: 0.3; stroke-width: 1; }
+  .ring-spin-ccw { transform-origin: 100px 100px; animation: bootRingSpin 9s linear infinite reverse; }
+  .ring-arc { stroke-opacity: 0.85; stroke-width: 1.5; stroke-linecap: round; filter: drop-shadow(0 0 4px var(--accent-primary)); }
+  @keyframes bootRingSpin { to { transform: rotate(360deg); } }
+
+  .boot-mark-glow {
+    position: absolute; width: 160px; height: 160px;
+    border-radius: var(--radius-full);
+    background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+    filter: blur(28px);
+    opacity: 0;
+    animation: bootGlowIn 1000ms var(--ease-standard) forwards, bootGlowBreathe 6s var(--ease-standard) infinite;
+    animation-delay: 0.5s, 1.5s;
+  }
+  @keyframes bootGlowIn { to { opacity: 0.5; } }
+  @keyframes bootGlowBreathe { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.65; } }
+
+  .boot-flash {
+    position: absolute; width: 220px; height: 220px;
+    border-radius: var(--radius-full);
+    background: radial-gradient(circle, rgba(245,245,247,0.9) 0%, rgba(201,154,91,0.4) 40%, transparent 72%);
+    opacity: 0;
+    animation: bootFlash 600ms ease-out forwards;
+    animation-delay: 0.95s;
+    pointer-events: none;
+  }
+  @keyframes bootFlash { 0% { opacity: 0; transform: scale(0.6); } 35% { opacity: 0.85; transform: scale(1); } 100% { opacity: 0; transform: scale(1.15); } }
+
+  .boot-mark { position: relative; width: 72px; height: 72px; overflow: visible; filter: drop-shadow(0 0 16px rgba(201,154,91,0.45)); }
+  .boot-mark .blade { transform-box: fill-box; transform-origin: center; opacity: 0; }
+  .blade-1 { animation: bootBlade1In 700ms var(--ease-standard) forwards; animation-delay: 0.32s; }
+  .blade-2 { animation: bootBlade2In 700ms var(--ease-standard) forwards; animation-delay: 0.46s; }
+  .blade-3 { animation: bootBlade3In 700ms var(--ease-standard) forwards; animation-delay: 0.6s; }
+  @keyframes bootBlade1In { 0% { opacity: 0; transform: scale(0.25) rotate(-65deg); } 70% { opacity: 1; } 100% { opacity: 1; transform: scale(1) rotate(0deg); } }
+  @keyframes bootBlade2In { 0% { opacity: 0; transform: scale(0.25) rotate(55deg); } 70% { opacity: 0.62; } 100% { opacity: 0.62; transform: scale(1) rotate(120deg); } }
+  @keyframes bootBlade3In { 0% { opacity: 0; transform: scale(0.25) rotate(175deg); } 70% { opacity: 0.32; } 100% { opacity: 0.32; transform: scale(1) rotate(240deg); } }
+
+  .boot-mark .core-outer, .boot-mark .core-inner { opacity: 0; transform-box: fill-box; transform-origin: center; }
+  .core-outer { animation: bootCoreIn 400ms var(--ease-standard) forwards; animation-delay: 0.85s; }
+  .core-inner { animation: bootCoreIn 400ms var(--ease-standard) forwards, bootCorePulse 2.4s var(--ease-standard) infinite; animation-delay: 0.9s, 1.3s; }
+  @keyframes bootCoreIn { to { opacity: 1; transform: scale(1); } }
+  @keyframes bootCorePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+  /* ---- title ---- */
+  .boot-text { margin-bottom: var(--space-7); }
+  .boot-title {
+    font-size: clamp(26px, 3.6vw, 42px);
+    line-height: 1.15;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 var(--space-3);
+  }
+  .boot-title .word {
+    display: inline-block;
+    opacity: 0;
+    filter: blur(8px);
+    letter-spacing: 0.3em;
+    transform: translateY(12px);
+    animation: bootWordIn 850ms var(--ease-standard) forwards;
+  }
+  .boot-title .word + .word { margin-left: 0.28em; }
+  .boot-title .word--accent { color: var(--accent-primary); text-shadow: 0 0 26px rgba(201,154,91,0.5); }
+  .boot-title .word:nth-child(1) { animation-delay: 1.55s; }
+  .boot-title .word:nth-child(2) { animation-delay: 1.7s; }
+  .boot-title .word:nth-child(3) { animation-delay: 1.85s; }
+  @keyframes bootWordIn {
+    0%   { opacity: 0; filter: blur(8px); letter-spacing: 0.3em; transform: translateY(12px); }
+    60%  { opacity: 1; filter: blur(0px); }
+    100% { opacity: 1; filter: blur(0px); letter-spacing: 0.02em; transform: translateY(0); }
+  }
+
+  .boot-tagline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    opacity: 0;
+    animation: bootFadeUp 700ms var(--ease-standard) forwards;
+    animation-delay: 2.15s;
+  }
+  @keyframes bootFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ---- ai system dots ---- */
+  .boot-systems {
+    display: flex; align-items: center; gap: var(--space-3);
+    margin-bottom: var(--space-6);
+    opacity: 0;
+    animation: bootFadeUp 700ms var(--ease-standard) forwards;
+    animation-delay: 2.35s;
+  }
+  .boot-sys-dot {
+    width: 6px; height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--c);
+    opacity: 0.22;
+    transform: scale(0.7);
+    transition: opacity 400ms var(--ease-standard), transform 400ms var(--ease-standard), box-shadow 400ms var(--ease-standard);
+  }
+  .boot-sys-dot.is-live {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 8px 1px var(--c);
+  }
+
+  /* ---- console ---- */
+  .boot-console {
+    width: min(360px, 78vw);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-md);
+    background: var(--glass-heavy-fill);
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(var(--glass-heavy-blur));
+    -webkit-backdrop-filter: blur(var(--glass-heavy-blur));
+    opacity: 0;
+    animation: bootFadeUp 700ms var(--ease-standard) forwards;
+    animation-delay: 2.5s;
+  }
+  .boot-log {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-3);
+    height: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .boot-log::after { content: '_'; color: var(--accent-primary); animation: bootCursorBlink 1s step-end infinite; }
+  @keyframes bootCursorBlink { 50% { opacity: 0; } }
+  .boot-log--flicker { animation: bootLogFlicker 260ms var(--ease-standard); }
+  @keyframes bootLogFlicker { 0% { opacity: 0.2; transform: translateX(-2px); } 100% { opacity: 1; transform: translateX(0); } }
+
+  .boot-progress {
+    position: relative;
+    height: 3px;
+    border-radius: var(--radius-full);
+    background: var(--border-default);
+    overflow: hidden;
+    margin-bottom: var(--space-2);
+  }
+  .boot-progress-fill {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    width: 0%;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-primary-hover));
+    box-shadow: 0 0 10px 1px rgba(201,154,91,0.6);
+    transition: width 120ms linear;
+  }
+  .boot-progress-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text-tertiary);
+  }
+  .boot-status--online { color: var(--color-success); text-shadow: 0 0 10px rgba(111,174,140,0.5); }
+
+  /* ---- skip hint ---- */
+  .boot-skip-hint {
+    position: absolute;
+    bottom: var(--space-7);
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-disabled);
+    opacity: 0;
+    z-index: 3;
+    animation: bootFadeUp 700ms var(--ease-standard) forwards;
+    animation-delay: 2.7s;
+  }
+
+  /* ---- exit transition ---- */
+  .boot-sequence--exit { animation: bootOverlayOut 900ms var(--ease-standard) forwards; animation-delay: 320ms; pointer-events: none; }
+  .boot-sequence--exit .boot-stage { animation: bootStageOut 420ms var(--ease-standard) forwards; }
+  .boot-sequence--exit .boot-skip-hint { display: none; }
+  @keyframes bootStageOut { to { opacity: 0; transform: scale(1.05); filter: blur(6px); } }
+  @keyframes bootOverlayOut { 0% { clip-path: circle(150% at 50% 50%); } 100% { clip-path: circle(0% at 50% 50%); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .boot-sequence, .boot-sequence * {
+      animation-duration: 0.01ms !important;
+      animation-delay: 0s !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+
+<div class="boot-sequence" id="bootSequence" role="status" aria-label="Creator Engine Pro is starting up">
+  <div class="boot-grid" aria-hidden="true"></div>
+  <div class="boot-particles" id="bootParticles" aria-hidden="true"></div>
+
+  <div class="boot-stage">
+    <div class="boot-mark-wrap">
+      <div class="boot-rings-wrap">
+        <svg class="boot-rings" viewBox="0 0 200 200" aria-hidden="true">
+          <circle class="boot-ring ring-outer" cx="100" cy="100" r="92"/>
+          <g class="ring-spin-cw"><circle class="boot-ring ring-dash" cx="100" cy="100" r="78" stroke-dasharray="2 7"/></g>
+          <g class="ring-spin-ccw"><circle class="boot-ring ring-arc" cx="100" cy="100" r="64" stroke-dasharray="120 380"/></g>
+        </svg>
+      </div>
+      <div class="boot-mark-glow" aria-hidden="true"></div>
+      <div class="boot-flash" aria-hidden="true"></div>
+      <svg class="boot-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path class="blade blade-1" d="M12 12 L10.1 3.2 L13.9 3.2 Z" fill="var(--accent-primary)"/>
+        <path class="blade blade-2" d="M12 12 L10.1 3.2 L13.9 3.2 Z" fill="var(--accent-primary)"/>
+        <path class="blade blade-3" d="M12 12 L10.1 3.2 L13.9 3.2 Z" fill="var(--accent-primary)"/>
+        <circle class="core-outer" cx="12" cy="12" r="1.3" fill="var(--bg-void)"/>
+        <circle class="core-inner" cx="12" cy="12" r="0.8" fill="var(--accent-primary-hover)"/>
+      </svg>
     </div>
-    <div class="terminal-text" id="status-text">INITIALIZING SYSTEM CORE...</div>
+
+    <div class="boot-text">
+      <h1 class="boot-title">
+        <span class="word">CREATOR</span><span class="word">ENGINE</span><span class="word word--accent">PRO</span>
+      </h1>
+      <p class="boot-tagline">Premium AI Automation Operating System</p>
+    </div>
+
+    <div class="boot-systems" id="bootSystems" aria-hidden="true">
+      <span class="boot-sys-dot" style="--c:var(--ai-chatgpt)"></span>
+      <span class="boot-sys-dot" style="--c:var(--ai-gemini)"></span>
+      <span class="boot-sys-dot" style="--c:var(--ai-claude)"></span>
+      <span class="boot-sys-dot" style="--c:var(--ai-deepseek)"></span>
+      <span class="boot-sys-dot" style="--c:var(--ai-qwen)"></span>
+      <span class="boot-sys-dot" style="--c:var(--ai-perplexity)"></span>
+      <span class="boot-sys-dot" style="--c:var(--ai-grok)"></span>
+    </div>
+
+    <div class="boot-console">
+      <p class="boot-log" id="bootLog">Initializing neural core</p>
+      <div class="boot-progress"><div class="boot-progress-fill" id="bootProgressFill"></div></div>
+      <div class="boot-progress-meta">
+        <span id="bootPercent">0%</span>
+        <span class="boot-status" id="bootStatus">Booting</span>
+      </div>
+    </div>
   </div>
 
-  <script>
-    // 🔴 5. Dynamic Terminal Text Script (Like a real OS booting up)
-    const statusText = document.getElementById('status-text');
-    const stages = [
-      "CONNECTING TO AI NODES...",
-      "WAKING UP WORKER AGENTS...",
-      "SYNCING ORCHESTRATOR...",
-      "CREATOR ENGINE READY."
-    ];
-    
-    let i = 0;
-    setTimeout(() => {
-        const interval = setInterval(() => {
-            if(i < stages.length) {
-                statusText.innerText = stages[i];
-                if(i === stages.length - 1) {
-                    statusText.style.color = "var(--accent-primary)";
-                    statusText.style.textShadow = "0 0 10px rgba(201,154,91,0.6)";
-                }
-                i++;
-            } else {
-                clearInterval(interval);
-            }
-        }, 850); // প্রতি ৮৫০ মিলি-সেকেন্ডে টেক্সট পাল্টাবে
-    }, 1400);
-  </script>
+  <div class="boot-skip-hint">Click anywhere to skip</div>
+  <div class="boot-vignette" aria-hidden="true"></div>
+</div>
 
+<script>
+(function () {
+  var boot = document.getElementById('bootSequence');
+  if (!boot) return;
+
+  // Only play the full cinematic boot once per app session.
+  var alreadyBooted = false;
+  try { alreadyBooted = sessionStorage.getItem('cepBooted') === '1'; } catch (e) {}
+  if (alreadyBooted) { boot.remove(); return; }
+
+  var reduced = false;
+  try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+  var logEl = document.getElementById('bootLog');
+  var fillEl = document.getElementById('bootProgressFill');
+  var pctEl = document.getElementById('bootPercent');
+  var statusEl = document.getElementById('bootStatus');
+  var sysDots = boot.querySelectorAll('.boot-sys-dot');
+  var particleField = document.getElementById('bootParticles');
+
+  var logs = [
+    'Initializing neural core',
+    'Loading creative modules',
+    'Connecting AI systems',
+    'Calibrating workflows',
+    'Systems online'
+  ];
+
+  // Ambient particles (skipped under reduced motion).
+  if (!reduced) {
+    var count = 46;
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement('span');
+      p.className = 'boot-particle';
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.top = (55 + Math.random() * 45) + '%';
+      p.style.setProperty('--size', (1 + Math.random() * 1.8).toFixed(1) + 'px');
+      p.style.setProperty('--dur', (7 + Math.random() * 9).toFixed(2) + 's');
+      p.style.setProperty('--delay', (Math.random() * 8).toFixed(2) + 's');
+      p.style.setProperty('--drift', (Math.random() * 24 - 12).toFixed(0) + 'px');
+      frag.appendChild(p);
+    }
+    particleField.appendChild(frag);
+  }
+
+  var finished = false;
+  function finishBoot() {
+    if (finished) return;
+    finished = true;
+    try { sessionStorage.setItem('cepBooted', '1'); } catch (e) {}
+    boot.classList.add('boot-sequence--exit');
+    setTimeout(function () {
+      if (boot && boot.parentNode) boot.remove();
+    }, 1000);
+  }
+
+  var step = -1;
+  function setStep(index) {
+    if (index === step) return;
+    step = index;
+    logEl.textContent = logs[step];
+    logEl.classList.remove('boot-log--flicker');
+    void logEl.offsetWidth;
+    logEl.classList.add('boot-log--flicker');
+  }
+
+  var totalDuration = reduced ? 250 : 3200;
+  var consoleStartDelay = reduced ? 0 : 2500; // matches .boot-console animation-delay
+  var startTime = null;
+
+  function tick(now) {
+    if (startTime === null) startTime = now;
+    var elapsed = now - startTime;
+    var pct = Math.min(100, Math.round((elapsed / totalDuration) * 100));
+
+    fillEl.style.width = pct + '%';
+    pctEl.textContent = pct + '%';
+
+    var logIndex = Math.min(logs.length - 1, Math.floor((pct / 100) * logs.length));
+    setStep(logIndex);
+
+    var liveCount = Math.round((pct / 100) * sysDots.length);
+    for (var i = 0; i < sysDots.length; i++) {
+      sysDots[i].classList.toggle('is-live', i < liveCount);
+    }
+
+    if (pct < 100) {
+      requestAnimationFrame(tick);
+    } else {
+      statusEl.textContent = 'Online';
+      statusEl.classList.add('boot-status--online');
+      setTimeout(finishBoot, reduced ? 150 : 550);
+    }
+  }
+
+  setTimeout(function () { requestAnimationFrame(tick); }, consoleStartDelay);
+
+  // Let impatient users skip straight to the dashboard.
+  function skip() {
+    boot.removeEventListener('click', skip);
+    document.removeEventListener('keydown', skip);
+    finishBoot();
+  }
+  boot.addEventListener('click', skip);
+  document.addEventListener('keydown', skip);
+
+  // Safety net in case something above throws or stalls.
+  setTimeout(finishBoot, 9000);
+})();
+</script>
+
+
+
+<div class="app">
+  <div class="desktop-ambience"></div>
+
+  <!-- ============ WINDOW CHROME (permanent App Shell) ============ -->
+  <header class="titlebar">
+    <div class="titlebar-brand">
+      <svg class="app-mark" viewBox="0 0 24 24" fill="none">
+        <path d="M12 12 L10.1 3.2 L13.9 3.2 Z" fill="var(--accent-primary)"/>
+        <path d="M12 12 L10.1 3.2 L13.9 3.2 Z" fill="var(--accent-primary)" opacity="0.62" transform="rotate(120 12 12)"/>
+        <path d="M12 12 L10.1 3.2 L13.9 3.2 Z" fill="var(--accent-primary)" opacity="0.32" transform="rotate(240 12 12)"/>
+        <circle cx="12" cy="12" r="1.3" fill="var(--bg-void)"/>
+        <circle cx="12" cy="12" r="0.8" fill="var(--accent-primary-hover)"/>
+      </svg>
+      <span class="app-name">Creator Engine Pro</span>
+    </div>
+    <div class="titlebar-controls">
+      <button class="win-btn" aria-label="Minimize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+      <button class="win-btn" aria-label="Maximize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="14" height="14" rx="1.5"/></svg></button>
+      <button class="win-btn win-btn--close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+  </header>
+
+  <div class="app-body">
+
+    <!-- ============ SIDEBAR (permanent App Shell) ============ -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-nav">
+        <a class="nav-item material-react nav-item--active" href="Dashboard.html" data-tooltip="Dashboard">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+        <a class="nav-item material-react" href="GeminiImages.html" data-tooltip="Gemini Images">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>
+          <span class="nav-label">Gemini Images</span>
+        </a>
+        <a class="nav-item material-react" href="FlowVideos.html" data-tooltip="Flow Videos">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M10 8l6 4-6 4V8z"/></svg></span>
+          <span class="nav-label">Flow Videos</span>
+        </a>
+        <a class="nav-item material-react" href="AIWorkspace.html" data-tooltip="AI Workspace">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v5M12 12l-5.5 5M12 12l5.5 5"/></svg></span>
+          <span class="nav-label">AI Workspace</span>
+        </a>
+      </div>
+
+      <div class="sidebar-spacer"></div>
+
+      <div class="sidebar-footer">
+        <button class="sidebar-collapse" id="collapseBtn" aria-label="Collapse sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+
+       <!-- ============ PROFILE (permanent, bottom of sidebar) ============ -->
+        <div class="sidebar-profile">
+          <button class="profile-trigger" id="profileBtn" data-tooltip="Alex Morgan">
+            <span class="avatar-wrap"><span class="avatar">AM</span></span>
+            <span class="profile-info">
+              <span class="profile-name">Alex Morgan</span>
+              <span class="profile-status text-caption">Active</span>
+            </span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+          </button>
+          
+          <div class="popover popover--up" id="profilePopover">
+            <button class="popover-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Settings</button>
+            <button class="popover-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>Help</button>
+            
+            <div class="popover-divider"></div>
+            
+            <!-- 🔴 ডায়নামিক অ্যাকাউন্টগুলো এখানে লিস্ট আকারে অটোমেটিক আসবে -->
+            <div id="dynamicAccountList"></div>
+            
+            <!-- 🔴 নতুন Add Account বাটন -->
+            <button class="popover-item" id="openAddAccountModal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+              Add Account
+            </button>
+
+            <div class="popover-divider"></div>
+            
+            <button class="popover-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sign out</button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ============ MAIN ============ -->
+    <div class="main">
+
+      <!-- ============ TOP BAR (permanent App Shell) ============ -->
+      <header class="topbar">
+        <span class="page-title">Dashboard</span>
+        <div class="topbar-right">
+          <div class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input class="search-input" type="text" placeholder="Search or jump to...">
+            <kbd>⌘K</kbd>
+          </div>
+          <div class="topbar-item">
+            <button class="icon-btn" id="notifBtn" aria-label="Notifications">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8z"/><path d="M9.5 17a2.5 2.5 0 0 0 5 0"/></svg>
+              <span class="badge-dot"></span>
+            </button>
+            <div class="popover popover--down" id="notifPopover">
+              <div class="popover-empty">No new notifications</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ============ CONTENT (Dashboard-specific) ============ -->
+      <main class="content">
+        <div class="content-inner">
+
+          <section class="hero">
+            <div class="ambient-glow" id="ambientGlow"></div>
+            <div class="ambient-glow-secondary"></div>
+            <div class="hero-watermark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 12 L10.1 3.2 L13.9 3.2 Z" fill="var(--accent-primary)"/>
+                <path d="M12 12 L10.1 3.2 L13.9 3.2 Z" fill="var(--accent-primary)" opacity="0.62" transform="rotate(120 12 12)"/>
+                <path d="M12 12 L10.1 3.2 L13.9 3.2 Z" fill="var(--accent-primary)" opacity="0.32" transform="rotate(240 12 12)"/>
+              </svg>
+            </div>
+            <div class="hero-content">
+              <p class="hero-eyebrow text-label">Creator Engine Pro</p>
+              <h1 class="hero-headline text-display" id="greeting">Good afternoon.</h1>
+              <p class="hero-subtitle">Your premium AI automation operating system — every model, every workflow, every creative tool, working as one.</p>
+              <div class="hero-actions">
+                <a class="btn btn--primary material-react" href="AIWorkspace.html">
+                  <span>Open AI Workspace</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+                </a>
+              </div>
+              <div class="systems-strip">
+                <span class="systems-strip-label text-caption">5 of 7 AI systems connected</span>
+                <div class="systems-strip-dots">
+                  <span class="strip-dot" style="background: var(--ai-chatgpt);"></span>
+                  <span class="strip-dot" style="background: var(--ai-gemini); animation-delay: 0.3s;"></span>
+                  <span class="strip-dot" style="background: var(--ai-claude); animation-delay: 0.6s;"></span>
+                  <span class="strip-dot" style="background: var(--ai-deepseek); animation-delay: 0.9s;"></span>
+                  <span class="strip-dot idle" style="background: var(--ai-qwen);"></span>
+                  <span class="strip-dot" style="background: var(--ai-perplexity); animation-delay: 1.2s;"></span>
+                  <span class="strip-dot idle" style="background: var(--ai-grok);"></span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="quick-actions">
+            <p class="text-label" style="color: var(--text-tertiary); margin-bottom: var(--space-3);">Quick actions</p>
+            <div class="quick-actions-row">
+              <button class="btn btn--secondary" onclick="window.location.href='AIWorkspace.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v5M12 12l-5.5 5M12 12l5.5 5"/></svg>New AI Session</button>
+              <button class="btn btn--secondary" onclick="window.location.href='GeminiImages.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>Generate Image</button>
+              <button class="btn btn--secondary" onclick="window.location.href='FlowVideos.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M10 8l6 4-6 4V8z"/></svg>Generate Video</button>
+              <button class="btn btn--secondary" onclick="window.location.href='AIWorkspace.html'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 6h6a4 4 0 0 1 4 4v2a4 4 0 0 0 4 4"/></svg>New Workflow</button>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-header"><h2 class="text-subheading"><span class="live-dot"></span>Live System Overview</h2></div>
+            <div class="stats-grid">
+              <div class="stat-card material-react whisper tilt">
+                <div class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></div>
+                <div class="stat-value text-display" data-count-to="12">0</div>
+                <div class="stat-label">Active Sessions</div>
+                <div class="stat-delta positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5-5 4 4 6-6"/><path d="M15 5h5v5"/></svg>+3 today</div>
+              </div>
+              <div class="stat-card material-react whisper tilt">
+                <div class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                <div class="stat-value text-display" data-count-to="1204">0</div>
+                <div class="stat-label">Images Generated</div>
+                <div class="stat-delta positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5-5 4 4 6-6"/><path d="M15 5h5v5"/></svg>+86 today</div>
+              </div>
+              <div class="stat-card material-react whisper tilt">
+                <div class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M10 8l6 4-6 4V8z"/></svg></div>
+                <div class="stat-value text-display" data-count-to="342">0</div>
+                <div class="stat-label">Videos Generated</div>
+                <div class="stat-delta positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5-5 4 4 6-6"/><path d="M15 5h5v5"/></svg>+14 today</div>
+              </div>
+              <div class="stat-card material-react whisper tilt">
+                <div class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 6h6a4 4 0 0 1 4 4v2a4 4 0 0 0 4 4"/></svg></div>
+                <div class="stat-value text-display" data-count-to="5">0</div>
+                <div class="stat-label">Active Workflows</div>
+                <div class="stat-delta neutral">2 running now</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-header"><h2 class="text-subheading">Continue where you left off</h2></div>
+            <div class="modules-grid">
+              <a class="module-card material-react tilt" href="GeminiImages.html">
+                <div class="module-icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                <h3 class="module-title">Gemini Images</h3>
+                <p class="module-desc">Generate and organize AI-created images.</p>
+                <div class="module-footer">Open<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></div>
+              </a>
+              <a class="module-card material-react tilt" href="FlowVideos.html">
+                <div class="module-icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M10 8l6 4-6 4V8z"/></svg></div>
+                <h3 class="module-title">Flow Videos</h3>
+                <p class="module-desc">Create and edit AI-generated video.</p>
+                <div class="module-footer">Open<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></div>
+              </a>
+              <a class="module-card material-react tilt" href="AIWorkspace.html">
+                <div class="module-icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v5M12 12l-5.5 5M12 12l5.5 5"/></svg></div>
+                <h3 class="module-title">AI Workspace</h3>
+                <p class="module-desc">Manage sessions across every connected AI system.</p>
+                <div class="module-footer">Open<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></div>
+              </a>
+            </div>
+          </section>
+
+          <div class="lower-grid">
+            <section class="section" style="margin-bottom:0;">
+              <div class="section-header"><h2 class="text-subheading">Recent Activity</h2><button class="btn btn--tertiary text-caption">View all</button></div>
+              <div class="list-panel">
+                <div class="activity-row material-react whisper"><span class="system-dot" style="background: var(--ai-claude);"></span><div class="activity-body"><div class="activity-system" style="color: var(--ai-claude);">Claude</div><div class="activity-text">Summarized Q3 report draft</div></div><span class="activity-time">12 min ago</span></div>
+                <div class="activity-row material-react whisper"><span class="system-dot" style="background: var(--ai-gemini);"></span><div class="activity-body"><div class="activity-system" style="color: var(--ai-gemini);">Gemini</div><div class="activity-text">Generated 4 product images</div></div><span class="activity-time">48 min ago</span></div>
+                <div class="activity-row material-react whisper"><span class="system-dot" style="background: var(--ai-perplexity);"></span><div class="activity-body"><div class="activity-system" style="color: var(--ai-perplexity);">Perplexity</div><div class="activity-text">Researched competitor pricing</div></div><span class="activity-time">1 hr ago</span></div>
+                <div class="activity-row material-react whisper"><span class="system-dot" style="background: var(--ai-deepseek);"></span><div class="activity-body"><div class="activity-system" style="color: var(--ai-deepseek);">DeepSeek</div><div class="activity-text">Refactored authentication flow</div></div><span class="activity-time">3 hr ago</span></div>
+                <div class="activity-row material-react whisper"><span class="system-dot" style="background: var(--ai-grok);"></span><div class="activity-body"><div class="activity-system" style="color: var(--ai-grok);">Grok</div><div class="activity-text">Drafted social copy variations</div></div><span class="activity-time">5 hr ago</span></div>
+              </div>
+            </section>
+
+            <section class="section" style="margin-bottom:0;">
+              <div class="section-header"><h2 class="text-subheading">System Status</h2></div>
+              <div class="list-panel">
+                <div class="system-row material-react whisper"><span class="system-dot live" style="background: var(--ai-chatgpt); animation-delay: 0s;"></span><span class="system-name">ChatGPT</span><span class="status-pill connected">Connected</span></div>
+                <div class="system-row material-react whisper"><span class="system-dot live" style="background: var(--ai-gemini); animation-delay: 0.6s;"></span><span class="system-name">Gemini</span><span class="status-pill connected">Connected</span></div>
+                <div class="system-row material-react whisper"><span class="system-dot live" style="background: var(--ai-claude); animation-delay: 1.2s;"></span><span class="system-name">Claude</span><span class="status-pill connected">Connected</span></div>
+                <div class="system-row material-react whisper"><span class="system-dot live" style="background: var(--ai-deepseek); animation-delay: 1.8s;"></span><span class="system-name">DeepSeek</span><span class="status-pill connected">Connected</span></div>
+                <div class="system-row material-react whisper"><span class="system-dot" style="background: var(--ai-qwen);"></span><span class="system-name">Qwen</span><span class="status-pill idle">Idle</span></div>
+                <div class="system-row material-react whisper"><span class="system-dot live" style="background: var(--ai-perplexity); animation-delay: 2.4s;"></span><span class="system-name">Perplexity</span><span class="status-pill connected">Connected</span></div>
+                <div class="system-row material-react whisper"><span class="system-dot" style="background: var(--ai-grok);"></span><span class="system-name">Grok</span><span class="status-pill idle">Idle</span></div>
+              </div>
+            </section>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ Greeting ============
+(function setGreeting() {
+  const hour = new Date().getHours();
+  document.getElementById('greeting').textContent = hour < 12 ? 'Good morning.' : hour < 18 ? 'Good afternoon.' : 'Good evening.';
+})();
+
+// ============ Sidebar collapse ============
+(function setupSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  document.getElementById('collapseBtn').addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+})();
+
+// ============ Popovers ============
+(function setupPopovers() {
+  function wire(btnId, popId) {
+    const btn = document.getElementById(btnId);
+    const pop = document.getElementById(popId);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.popover').forEach((p) => { if (p !== pop) p.classList.remove('open'); });
+      pop.classList.toggle('open');
+    });
+  }
+  wire('notifBtn', 'notifPopover');
+  wire('profileBtn', 'profilePopover');
+  document.addEventListener('click', () => document.querySelectorAll('.popover').forEach((p) => p.classList.remove('open')));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.popover').forEach((p) => p.classList.remove('open')); });
+})();
+
+// ============ Count-up (stat values), driven by the exact locked easing curve ============
+(function setupCountUp() {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function cubicBezier(x1, y1, x2, y2) {
+    function bx(t) { return 3*(1-t)*(1-t)*t*x1 + 3*(1-t)*t*t*x2 + t*t*t; }
+    function by(t) { return 3*(1-t)*(1-t)*t*y1 + 3*(1-t)*t*t*y2 + t*t*t; }
+    return function (x) {
+      let t = x;
+      for (let i = 0; i < 8; i++) {
+        const dx = bx(t) - x;
+        if (Math.abs(dx) < 0.001) break;
+        const d = 3*(1-t)*(1-t)*x1 + 6*(1-t)*t*(x2-x1) + 3*t*t*(1-x2);
+        if (Math.abs(d) < 1e-6) break;
+        t -= dx / d;
+      }
+      return by(t);
+    };
+  }
+  const easeStandard = cubicBezier(0.16, 1, 0.3, 1);
+
+  function animateCountUp(el, duration) {
+    const target = parseInt(el.dataset.countTo, 10) || 0;
+    if (reduceMotion) { el.textContent = target.toLocaleString(); return; }
+    const start = performance.now();
+    function tick(now) {
+      const t = Math.min((now - start) / duration, 1);
+      el.textContent = Math.round(easeStandard(t) * target).toLocaleString();
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = target.toLocaleString();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  document.querySelectorAll('[data-count-to]').forEach((el, i) => {
+    setTimeout(() => animateCountUp(el, 900), 260 + i * 80);
+  });
+})();
+
+// ============ Material Presence — cursor-reactive surface system ============
+// Full tier (nav items, module cards, primary button): position-aware light
+// response + existing elevation/border shift. Module cards additionally get a
+// restrained perspective tilt (~1.5° max), hover-only, from the same cursor
+// position data — no separate tracking needed.
+// Whisper tier (stat cards, activity/status rows): position-aware light only,
+// at lower opacity, with no elevation change — present, never implying
+// clickability.
+// Atmosphere: the hero's primary ambient glow carries a slow, heavily-lagged
+// bias toward general cursor activity, layered on top of its own independent
+// idle breathing (pure CSS, always running).
+// Everything here is skipped under prefers-reduced-motion; hover/focus states
+// defined in CSS remain untouched.
+(function initMaterialPresence() {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion) return;
+
+  let pointerX = window.innerWidth / 2;
+  let pointerY = window.innerHeight / 2;
+  let ticking = false;
+
+  const proximityRadius = 48;
+  const els = document.querySelectorAll('.material-react');
+  const sidebarEl = document.getElementById('sidebar');
+
+  function update() {
+    if (sidebarEl) {
+      const sRect = sidebarEl.getBoundingClientRect();
+      if (pointerY >= sRect.top && pointerY <= sRect.bottom && pointerX >= sRect.left && pointerX <= sRect.right) {
+        sidebarEl.style.setProperty('--sidebar-light-y', (((pointerY - sRect.top) / sRect.height) * 100).toFixed(1) + '%');
+      }
+    }
+
+    els.forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      const nx = Math.max(rect.left, Math.min(pointerX, rect.right));
+      const ny = Math.max(rect.top, Math.min(pointerY, rect.bottom));
+      const dist = Math.hypot(pointerX - nx, pointerY - ny);
+      const near = dist < proximityRadius;
+      el.classList.toggle('is-near', near);
+
+      const withinBounds = pointerX >= rect.left && pointerX <= rect.right && pointerY >= rect.top && pointerY <= rect.bottom;
+
+      if (near || withinBounds) {
+        const mx = ((pointerX - rect.left) / rect.width) * 100;
+        const my = ((pointerY - rect.top) / rect.height) * 100;
+        el.style.setProperty('--mx', mx.toFixed(1) + '%');
+        el.style.setProperty('--my', my.toFixed(1) + '%');
+      }
+
+      if (el.classList.contains('tilt')) {
+        const maxTilt = el.classList.contains('whisper') ? 1.6 : 3;
+        if (withinBounds) {
+          const mx = (pointerX - rect.left) / rect.width;
+          const my = (pointerY - rect.top) / rect.height;
+          el.style.setProperty('--tilt-x', ((0.5 - my) * maxTilt).toFixed(2) + 'deg');
+          el.style.setProperty('--tilt-y', ((mx - 0.5) * maxTilt).toFixed(2) + 'deg');
+        } else {
+          el.style.setProperty('--tilt-x', '0deg');
+          el.style.setProperty('--tilt-y', '0deg');
+        }
+      }
+    });
+    ticking = false;
+  }
+
+  document.addEventListener('mousemove', (e) => {
+    pointerX = e.clientX; pointerY = e.clientY;
+    if (!ticking) { requestAnimationFrame(update); ticking = true; }
+  }, { passive: true });
+
+  const glow = document.getElementById('ambientGlow');
+  if (glow) {
+    let driftX = 0, driftY = 0;
+    const maxDriftX = 50, maxDriftY = 20;
+    (function driftLoop() {
+      const targetX = ((pointerX / window.innerWidth) - 0.5) * 2 * maxDriftX;
+      const targetY = ((pointerY / window.innerHeight) - 0.5) * 2 * maxDriftY;
+      driftX += (targetX - driftX) * 0.004;
+      driftY += (targetY - driftY) * 0.004;
+      glow.style.transform = `translate(${driftX.toFixed(2)}px, ${driftY.toFixed(2)}px)`;
+      requestAnimationFrame(driftLoop);
+    })();
+  }
+})();
+</script>
+<script src="ui_controller.js"></script>
+
+<!-- 🔴 Add Account Modal (সিম্পল ফর্ম) -->
+<div id="addAccountModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+    <div style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 360px;">
+        <h3 style="margin-top: 0; color: #fff; font-family: sans-serif; font-weight: 500;">Add New Account</h3>
+        <p style="color: #a0a0a0; font-size: 14px; margin-bottom: 20px; font-family: sans-serif;">Enter an email to create a new profile.</p>
+        
+        <input type="text" id="newAccountInput" placeholder="e.g., workspace@studio.io" autocomplete="off" style="width: 100%; padding: 12px; background: #141418; border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 20px; box-sizing: border-box; font-size: 14px; outline: none;" />
+        
+        <div style="display: flex; justify-content: flex-end; gap: 12px; font-family: sans-serif;">
+            <button id="cancelAccountBtn" style="background: transparent; color: #a0a0a0; border: 1px solid #444; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancel</button>
+            <button id="saveAccountBtn" style="background: #2563eb; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Create & Login</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

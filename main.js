@@ -1,7 +1,7 @@
 // ==========================================
 // FILE: main.js (Integrated Router + Record Switch + Smart Tag Stripper)
 // ==========================================
-
+const { autoUpdater } = require('electron-updater');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -175,6 +175,7 @@ app.on('ready', () => {
     const inboxDir = path.join(__dirname, 'Master_Controller', 'Inbox');
     const outboxDir = path.join(__dirname, 'Master_Controller', 'Outbox');
     const finalReportsDir = path.join(__dirname, 'Master_Controller', 'Final_Reports');
+    autoUpdater.checkForUpdatesAndNotify();
     
     [inboxDir, outboxDir].forEach(dir => {
         if (fs.existsSync(dir)) {
