@@ -1,19 +1,23 @@
 // ==========================================
-// FILE: main.js (Integrated Router + Record Switch + Smart Tag Stripper)
+// FILE: main.js (With Smart Waiting List Queue & Stop Logic)
 // ==========================================
-const { autoUpdater } = require('electron-updater');
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const { fork, spawn } = require('child_process');
 
-// মাস্টার কন্ট্রোলার ফোল্ডারের পাথ
+let autoUpdater;
+try {
+    autoUpdater = require('electron-updater').autoUpdater;
+} catch (e) {
+    console.log("⚠️ electron-updater not installed. Auto-update disabled.");
+}
+
 const MASTER_DIR = path.join(__dirname, 'Master_Controller');
 if (!fs.existsSync(MASTER_DIR)) fs.mkdirSync(MASTER_DIR, { recursive: true });
 const SELECTOR_FILE = path.join(MASTER_DIR, 'ai_selectors.json');
 
-// গিটহাব থেকে লাইভ পাথ আপডেট করার ফাংশন
 function fetchRemoteSelectors() {
     const rawUrl = 'https://gist.githubusercontent.com/AtawurRahmanTanvir/ebe8653d9b5f6860dbd2b8d1ae8482c4/raw/ai_selectors.json';
 
@@ -24,7 +28,6 @@ function fetchRemoteSelectors() {
             try {
                 const fetched = JSON.parse(data);
                 if (fetched && fetched.chatgpt) {
-                    // সফল হলে মাস্টার ফোল্ডারে সেভ করে রাখবে
                     fs.writeFileSync(SELECTOR_FILE, JSON.stringify(fetched, null, 4));
                     console.log("✅ Remote AI Selectors Saved to File!");
                 }
@@ -37,25 +40,19 @@ function fetchRemoteSelectors() {
     });
 }
 
-// অ্যাপ চালুর সাথে সাথেই আপডেট চেক করবে
 fetchRemoteSelectors();
 
 let mainWindow;
 let activeEngines = {}; 
-
-// 🔴 WARM-UP / RECORDING SWITCH
-// ডিফল্টভাবে True থাকবে, UI থেকে আমরা এটা অন/অফ করার সুইচ বানাবো
 let isRecordingActive = true; 
 
-// ==========================================
-// 🔴 STRICT QA ROUTING ARCHITECTURE
-// ==========================================
+// 🔴 MAGIC FIX: GLOBAL WAITING LIST (QUEUE)
+const messageQueue = {}; 
+
 const ALLOWED_ROUTES = {
     '@admin': ['@administrator', '@final', '@chatgpt', '@claude', '@gemini', '@qwen', '@deepseek', '@perplexity', '@grok'],
     '@administrator': ['@final', '@chatgpt', '@claude', '@gemini', '@qwen', '@deepseek', '@perplexity', '@grok'],
-    // Final AI হয় আপনাকে (admin) আউটপুট দেবে, নয়তো ভুল ধরিয়ে দিয়ে Administrator কে ফেরত পাঠাবে
     '@final': ['@admin', '@administrator'], 
-    // Worker AI রা শুধুই Administrator এর সাথে কথা বলতে পারবে
     '@chatgpt': ['@administrator'],
     '@claude': ['@administrator'],
     '@gemini': ['@administrator'],
@@ -65,18 +62,14 @@ const ALLOWED_ROUTES = {
     '@grok': ['@administrator']
 };
 
-// এই ট্যাগগুলোই শুধু মেসেজ থেকে রিমুভ করা হবে (অন্য কোনো @ ট্যাগ কাটবে না)
 const SYSTEM_TAGS_REGEX = /@(admin|administrator|final|chatgpt|claude|gemini|qwen|deepseek|perplexity|grok)\b/gi;
 
-function sendToUIConsole(type, text) {
+function sendToUIConsole(type, text, target = 'workspace') {
     if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('ui-console-log', { type, text });
+        mainWindow.webContents.send('ui-console-log', { target, type, text });
     }
 }
 
-// ==========================================
-// 🔴 অটো ব্রাউজার ম্যানেজার (Auto Browser Manager)
-// ==========================================
 let activeBrowsers = {}; 
 let basePort = 9222;     
 
@@ -109,53 +102,6 @@ function updateActivePorts() {
     fs.writeFileSync(path.join(masterDir, 'active_ports.json'), JSON.stringify(portsData, null, 4));
 }
 
-function ensureBrowserRunning(accountName) {
-    if (activeBrowsers[accountName]) {
-        activeBrowsers[accountName].users++; 
-        return activeBrowsers[accountName].port;
-    }
-
-    const port = basePort++;
-    const safeAccountName = accountName.replace(/[^a-zA-Z0-9@.-]/g, '_');
-    const profilePath = path.join(__dirname, 'Accounts', safeAccountName);
-    
-    const chromePaths = [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe')
-    ];
-    const chromeExe = chromePaths.find(p => fs.existsSync(p));
-
-    if (!chromeExe) {
-        console.log("❌ Error: Chrome not found!");
-        sendToUIConsole('error', "Google Chrome was not found on this PC!");
-        return null;
-    }
-
-    console.log(`🌐 Auto-Launching Chrome Window for [${accountName}] on port ${port}...`);
-    sendToUIConsole('progress', `Launching Chrome for account [${accountName}]...`);
-    
-    const browserProc = spawn(chromeExe, [
-        `--remote-debugging-port=${port}`,
-        `--user-data-dir=${profilePath}`,
-        '--no-first-run',
-        '--no-default-browser-check'
-    ]);
-
-    browserProc.on('exit', () => {
-        console.log(`⚠️ Chrome Window for [${accountName}] was closed manually!`);
-        sendToUIConsole('waiting', `Chrome Window for [${accountName}] was closed!`);
-        if (activeBrowsers[accountName]) {
-            delete activeBrowsers[accountName]; 
-            updateActivePorts();
-        }
-    });
-
-    activeBrowsers[accountName] = { process: browserProc, port: port, users: 1 };
-    updateActivePorts();
-    return port;
-}
-
 function releaseBrowser(accountName) {
     if (activeBrowsers[accountName]) {
         activeBrowsers[accountName].users--;
@@ -171,11 +117,11 @@ function releaseBrowser(accountName) {
 
 app.on('ready', () => {
 
-    // 🔴 1. STARTUP CLEANUP: পুরনো ইনবক্স/আউটবক্স রিমুভ করা
     const inboxDir = path.join(__dirname, 'Master_Controller', 'Inbox');
     const outboxDir = path.join(__dirname, 'Master_Controller', 'Outbox');
     const finalReportsDir = path.join(__dirname, 'Master_Controller', 'Final_Reports');
-    autoUpdater.checkForUpdatesAndNotify();
+    
+    if (autoUpdater) autoUpdater.checkForUpdatesAndNotify();
     
     [inboxDir, outboxDir].forEach(dir => {
         if (fs.existsSync(dir)) {
@@ -191,42 +137,25 @@ app.on('ready', () => {
     if (!fs.existsSync(finalReportsDir)) fs.mkdirSync(finalReportsDir, { recursive: true });
     console.log("🧹 Startup Cleanup: Old Inbox & Outbox files removed!");
 
-// 🔴 1. CREATE SPLASH SCREEN (ANIMATION WINDOW)
-    let splashWindow = new BrowserWindow({
-        width: 500, 
-        height: 400, 
-        transparent: true, // ব্যাকগ্রাউন্ড গ্লাস ইফেক্টের জন্য
-        frame: false,      // উপরের বোরিং টাইটেল বার সরাতে
-        alwaysOnTop: true, // লোডিং এর সময় সবার উপরে থাকবে
-        icon: path.join(__dirname, 'icon.ico')
-    });
-
-    splashWindow.loadFile(path.join(__dirname, 'App_UI', 'splash.html'));
-
-    // 🔴 2. LAUNCH MAIN UI (HIDDEN IN BACKGROUND)
     mainWindow = new BrowserWindow({
         width: 1280, height: 800, minWidth: 1024, minHeight: 768,
         title: "Creator Engine Pro", autoHideMenuBar: true,
-        show: false, // 🔴 এটা false করা হলো, কারণ আগে স্প্ল্যাশ স্ক্রিন দেখাবো
+        show: true, 
+        backgroundColor: '#0A0A0C', 
         icon: path.join(__dirname, 'icon.ico'), 
-        webPreferences: { nodeIntegration: true, contextIsolation: false }
+        webPreferences: { 
+            nodeIntegration: true, 
+            contextIsolation: false,
+            sandbox: false
+        }
     });
 
-    mainWindow.loadFile(path.join(__dirname, 'App_UI', 'Dashboard.html'));
-
-    // 🔴 3. SWITCH FROM SPLASH TO MAIN UI AFTER 5 SECONDS
-    mainWindow.once('ready-to-show', () => {
-        setTimeout(() => {
-            splashWindow.close(); // ৫ সেকেন্ড পর স্প্ল্যাশ স্ক্রিন বন্ধ হবে
-            mainWindow.show();    // এবং আসল ড্যাশবোর্ড চালু হবে
-        }, 5000); 
-    });
+    mainWindow.loadFile(path.join(__dirname, 'App_UI', 'index.html'));
 
     ipcMain.on('window-minimize', () => mainWindow.minimize());
     ipcMain.on('window-maximize', () => mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize());
     ipcMain.on('window-close', () => mainWindow.close());
 
-    // 🔴 4. TOGGLE RECORDING SWITCH (WARM-UP MODE)
     ipcMain.on('toggle-recording', (event, state) => {
         isRecordingActive = state;
         const status = isRecordingActive ? 'ON (Active Routing)' : 'OFF (Warm-up Mode)';
@@ -234,48 +163,44 @@ app.on('ready', () => {
         sendToUIConsole('info', `System Recording: ${status}`);
     });
 
-// 🔴 4. Smart Task Routing (UI থেকে ইনবক্সে মেসেজ পাঠানো)
+    // 🔴 NEW: Stop All / Clear Queue Event (এটাই তোমার ফাইলে মিসিং ছিল)
+    ipcMain.on('clear-queue', () => {
+        for(let key in messageQueue) { 
+            messageQueue[key] = []; 
+        } // Empty all waiting lists
+        console.log("🛑 Administrator halted all tasks!");
+        sendToUIConsole('error', "All pending operations stopped. Queue cleared.");
+    });
+
+    // 🔴 UI থেকে পাঠানো মেসেজ সরাসরি ওয়েটিং লিস্টে (Queue) যাবে
     ipcMain.on('send-ai-command', (event, data) => {
         const { text, target } = data; 
         
-        // 🔴 MAGIC FIX: UI থেকে আসা প্রথম মেসেজ থেকেও ট্যাগ মুছে ফেলা হচ্ছে!
-        const SYSTEM_TAGS_REGEX = /@(admin|administrator|final|chatgpt|claude|gemini|qwen|deepseek|perplexity|grok)\b/gi;
         let cleanPrompt = text.replace(SYSTEM_TAGS_REGEX, '').trim();
         if (cleanPrompt === "") cleanPrompt = text; 
 
         const taskData = {
-            task_id: `task_admin_${Date.now()}`, 
+            task_id: `task_admin_${Date.now()}_${Math.floor(Math.random()*1000)}`, 
             sender: "@admin",
-            prompt: cleanPrompt, // 🔴 ক্লিন করা ফ্রেশ টেক্সট ইনবক্সে যাচ্ছে
+            prompt: cleanPrompt, 
             timestamp: new Date().toISOString()
         };
 
-        let targetFile = '';
-        if (target === 'auto') {
-            targetFile = 'administrator_inbox.json'; 
-            console.log(`🧠 Task sent to ADMINISTRATOR AI!`);
-            sendToUIConsole('sent', `Task sent to Administrator AI.`);
-        } else {
-            targetFile = `${target}_inbox.json`; 
-            console.log(`🎯 Task routed directly to ${target.toUpperCase()}'s Inbox!`);
-            sendToUIConsole('sent', `Task routed directly to ${target.toUpperCase()}`);
-        }
+        const targetWorker = target === 'auto' ? 'administrator' : target;
         
-        fs.writeFileSync(path.join(inboxDir, targetFile), JSON.stringify(taskData, null, 4));
+        if (!messageQueue[targetWorker]) messageQueue[targetWorker] = [];
+        messageQueue[targetWorker].push(taskData); // মেসেজ লাইনে দাঁড়িয়ে গেলো!
+
+        console.log(`📥 Added task to ${targetWorker.toUpperCase()}'s Waiting List.`);
+        sendToUIConsole('sent', `Task queued for ${targetWorker.toUpperCase()}`);
     });
 
-    // 🔴 5. এআই ইঞ্জিন কন্ট্রোলার (Start/Stop)
     ipcMain.on('start-engine', (event, data) => {
         let systemId = typeof data === 'string' ? data : data.systemId;
         let accountName = typeof data === 'string' ? 'Select Account' : data.accountName;
 
         if (!systemId) return;
         systemId = systemId.toLowerCase(); 
-
-        if (accountName && accountName !== 'Select Account') {
-            if (typeof WORKERS !== 'undefined' && WORKERS[systemId]) WORKERS[systemId].account = accountName;
-            if (typeof SYSTEMS !== 'undefined' && SYSTEMS[systemId]) SYSTEMS[systemId].account = accountName;
-        }
 
         if (activeEngines[systemId]) {
             try { activeEngines[systemId].process.kill(); } catch(e){}
@@ -344,15 +269,12 @@ app.on('ready', () => {
     });
 
     // =======================================================
-    // 🔴 6. INTEGRATED ROUTER (The Brain of the QA Loop)
+    // 🔴 6. INTEGRATED ROUTER & WAITING LIST PROCESSOR
     // =======================================================
     setInterval(() => {
-        if (!fs.existsSync(outboxDir)) return;
-        
-        fs.readdir(outboxDir, (err, files) => {
-            if (err) return;
-            
-            files.forEach(file => {
+        // Step A: Process Outbox
+        if (fs.existsSync(outboxDir)) {
+            fs.readdirSync(outboxDir).forEach(file => {
                 if (file.startsWith('outbox_')) {
                     const filePath = path.join(outboxDir, file);
                     try {
@@ -362,15 +284,13 @@ app.on('ready', () => {
                         const sender = (data.sender || '').toLowerCase();
                         const text = data.response || data.original_prompt || "";
 
-                        // 🛑 RECORDING SWITCH LOGIC (WARM-UP)
                         if (!isRecordingActive) {
                             console.log(`[WARM-UP] 🛑 Ignored output from ${sender} (Recording is OFF)`);
                             sendToUIConsole('info', `[WARM-UP] Ignored response from ${sender.toUpperCase()}`);
-                            fs.unlinkSync(filePath); // জাস্ট ডিলিট করে দেবে, লুপে পাঠাবে না
+                            fs.unlinkSync(filePath); 
                             return;
                         }
 
-                        // 🔀 QA ROUTING LOGIC
                         const allTags = text.match(/@\w+/g) || [];
                         if (data.receiver && data.receiver.startsWith('@')) {
                             allTags.unshift(data.receiver.toLowerCase());
@@ -379,7 +299,6 @@ app.on('ready', () => {
                         let finalTarget = null;
                         const allowedForSender = ALLOWED_ROUTES[sender] || [];
 
-                        // স্ট্রিক্ট চেকিং: প্রথম ভ্যালিড ট্যাগটাই গ্রহণ করবে!
                         for (const tag of allTags) {
                             const cleanTag = tag.toLowerCase();
                             if (allowedForSender.includes(cleanTag)) {
@@ -388,7 +307,6 @@ app.on('ready', () => {
                             }
                         }
 
-                        // 🔴 অ্যান্টি-চালাকি / অটো-রাউটিং (ট্যাগ না দিলেও ঠিক জায়গায় যাবে)
                         if (!finalTarget) {
                             if (sender === '@final') finalTarget = '@admin'; 
                             else if (sender === '@administrator') finalTarget = '@final'; 
@@ -401,21 +319,15 @@ app.on('ready', () => {
 
                         console.log(`[ROUTER] 🔀 Validated Route: ${sender} ➔ ${finalTarget}`);
 
-                        // 🔴 UI কে লাইভ চ্যাট ডেটা পাঠানো হচ্ছে (এখানে অরিজিনাল টেক্সটটাই যাবে যাতে আপনি দেখতে পান কে কী ট্যাগ ইউজ করেছে)
                         if (mainWindow && !mainWindow.isDestroyed()) {
                             mainWindow.webContents.send('live-ai-chat', { sender: sender, receiver: finalTarget, text: text });
                         }
 
-                        // 🔴 MAGIC: প্রম্পট থেকে সব সিস্টেম ট্যাগ মুছে ফেলা হচ্ছে, যাতে AI শুধু আসল টেক্সট পায়!
                         let cleanPrompt = text.replace(SYSTEM_TAGS_REGEX, '').trim();
-                        // যদি ট্যাগ মোছার পর টেক্সট ফাঁকা হয়ে যায়, তবে অরিজিনালটাই রাখবে
                         if (cleanPrompt === "") cleanPrompt = text; 
 
-                        // 🎯 মেসেজ ডেলিভারি
                         if (finalTarget === '@admin') {
                             console.log(`🎉 Final Output ready for Admin! Sending to UI...`);
-                            
-                            // ফাইনাল আউটপুটেও ট্যাগ ক্লিন করে পাঠানো হলো
                             data.response = cleanPrompt;
 
                             if (mainWindow && !mainWindow.isDestroyed()) {
@@ -425,27 +337,43 @@ app.on('ready', () => {
                         } 
                         else {
                             const targetWorker = finalTarget.replace('@', ''); 
-                            const targetInbox = path.join(inboxDir, `${targetWorker}_inbox.json`);
-
+                            
                             const newTask = {
                                 task_id: data.task_id || `task_${Date.now()}`, 
                                 sender: sender, 
-                                prompt: cleanPrompt, // 🔴 ক্লিন করা ফ্রেশ প্রম্পটটাই শুধু AI এর ইনবক্সে যাবে
+                                prompt: cleanPrompt, 
                                 timestamp: new Date().toISOString()
                             };
 
-                            fs.writeFileSync(targetInbox, JSON.stringify(newTask, null, 4));
-                            fs.unlinkSync(filePath);
+                            // 🔴 AI এর রিপ্লাইগুলো সরাসরি ফাইলে না লিখে ওয়েটিং লিস্টে (Queue) ঢুকিয়ে দেওয়া হচ্ছে!
+                            if (!messageQueue[targetWorker]) messageQueue[targetWorker] = [];
+                            messageQueue[targetWorker].push(newTask);
+                            
+                            fs.unlinkSync(filePath); // আউটবক্স থেকে ফাইল ডিলিট
                         }
                     } catch (e) {
                         console.log(`[ERROR] Processing file ${file}: ${e.message}`);
                     }
                 }
             });
-        });
-    }, 2000); 
+        }
 
-    // Account Managers
+        // 🔴 Step B: Process Waiting Lists (Queue Manager)
+        for (const worker in messageQueue) {
+            if (messageQueue[worker].length > 0) {
+                const inboxPath = path.join(inboxDir, `${worker}_inbox.json`);
+                
+                // শুধুমাত্র যদি ইনবক্স ফাঁকা থাকে (AI আগের কাজ শেষ করে ফাইল ডিলিট করে দেয়), তবেই নতুন মেসেজ ঢুকবে!
+                if (!fs.existsSync(inboxPath)) {
+                    const nextTask = messageQueue[worker].shift(); // ওয়েটিং লিস্ট থেকে প্রথম মেসেজটা নিলাম
+                    fs.writeFileSync(inboxPath, JSON.stringify(nextTask, null, 4)); // ইনবক্সে দিয়ে দিলাম
+                    console.log(`✅ [QUEUE] Sent waiting task to ${worker.toUpperCase()}'s Inbox! (${messageQueue[worker].length} tasks remaining)`);
+                }
+            }
+        }
+
+    }, 2000); // প্রতি ২ সেকেন্ড পর পর চেক করবে
+
     ipcMain.handle('get-existing-accounts', async () => {
         const accPath = path.join(__dirname, 'Accounts');
         if (!fs.existsSync(accPath)) return [];
@@ -468,91 +396,117 @@ app.on('ready', () => {
             spawn(chromeExe, [`--user-data-dir=${profilePath}`, '--no-first-run', '--no-default-browser-check']);
         }
     });
+
+    ipcMain.on('delete-account', (event, accountName) => {
+        const safeAccountName = accountName.replace(/[^a-zA-Z0-9@.-]/g, '_');
+        const profilePath = path.join(__dirname, 'Accounts', safeAccountName);
+        if (fs.existsSync(profilePath)) {
+            try {
+                fs.rmSync(profilePath, { recursive: true, force: true });
+                console.log(`🗑️ Deleted account folder: ${safeAccountName}`);
+            } catch (err) {
+                console.error("Failed to delete account:", err);
+            }
+        }
+    });
+
+    if (autoUpdater) {
+        ipcMain.on('check-for-updates', () => {
+            try {
+                autoUpdater.checkForUpdates();
+            } catch (error) {
+                if (mainWindow) mainWindow.webContents.send('update-status', 'Error connecting to server.');
+            }
+        });
+
+        autoUpdater.on('checking-for-update', () => {
+            if (mainWindow) mainWindow.webContents.send('update-status', 'Checking GitHub repository...');
+        });
+        autoUpdater.on('update-available', (info) => {
+            if (mainWindow) mainWindow.webContents.send('update-status', `Update v${info.version} available. Downloading...`);
+        });
+        autoUpdater.on('update-not-available', (info) => {
+            if (mainWindow) mainWindow.webContents.send('update-status', 'You are on the latest version.');
+        });
+        autoUpdater.on('error', (err) => {
+            if (mainWindow) mainWindow.webContents.send('update-status', 'Error checking for updates.');
+        });
+    }
 });
 
-// =======================================================
-    // 🔴 7. FLOW VIDEO ENGINE CONTROLLER (New)
-    // =======================================================
-    let flowEngineProcess = null;
+let flowEngineProcess = null;
 
-    ipcMain.on('start-flow-engine', (event, data) => {
-        const { prompts, accountName } = data;
-        const enginePath = path.join(__dirname, 'AI_Workers', 'flow_engine.js');
+ipcMain.on('start-flow-engine', (event, data) => {
+    const { prompts, accountName } = data;
+    const enginePath = path.join(__dirname, 'AI_Workers', 'flow_engine.js');
 
-        if (flowEngineProcess) {
-            try { flowEngineProcess.kill(); } catch(e){}
-        }
+    if (flowEngineProcess) {
+        try { flowEngineProcess.kill(); } catch(e){}
+    }
 
-        console.log(`🚀 Starting Flow Video Engine with Profile: ${accountName}`);
-        flowEngineProcess = fork(enginePath, [accountName], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
+    console.log(`🚀 Starting Flow Video Engine with Profile: ${accountName}`);
+    flowEngineProcess = fork(enginePath, [accountName], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
 
-        // ইঞ্জিন থেকে আসা লাইভ কনসোল এবং স্ট্যাটাস আপডেট UI-তে পাঠানো
-        flowEngineProcess.on('message', (msg) => {
-            if (msg.type === 'console') {
-                sendToUIConsole(msg.logType, msg.text); // লাইভ কনসোলে প্রিন্ট হবে
-            } else if (msg.type === 'status') {
-                if (mainWindow && !mainWindow.isDestroyed()) {
-                    mainWindow.webContents.send('flow-status', msg); // প্রগ্রেস বার আপডেট করবে
-                }
+    flowEngineProcess.on('message', (msg) => {
+        if (msg.type === 'console') {
+            sendToUIConsole(msg.logType, msg.text, 'flow'); 
+        } else if (msg.type === 'status') {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('flow-status', msg); 
             }
-        });
-
-        // প্রম্পটগুলো দিয়ে ইঞ্জিন স্টার্ট করা
-        flowEngineProcess.send({ type: 'start', prompts: prompts });
-    });
-
-    ipcMain.on('resume-flow-engine', () => {
-        if (flowEngineProcess) flowEngineProcess.send({ type: 'resume' });
-    });
-
-    ipcMain.on('stop-flow-engine', () => {
-        if (flowEngineProcess) {
-            flowEngineProcess.send('shutdown');
-            setTimeout(() => { flowEngineProcess = null; }, 1000);
         }
     });
 
-// =======================================================
-    // 🔴 8. GEMINI IMAGE ENGINE CONTROLLER (New)
-    // =======================================================
-    let geminiImageEngineProcess = null;
+    flowEngineProcess.send({ type: 'start', prompts: prompts });
+});
 
-    ipcMain.on('start-gemini-image-engine', (event, data) => {
-        const { prompts, accountName } = data;
-        const enginePath = path.join(__dirname, 'AI_Workers', 'gemini_image_engine.js');
+ipcMain.on('resume-flow-engine', () => {
+    if (flowEngineProcess) flowEngineProcess.send({ type: 'resume' });
+});
 
-        if (geminiImageEngineProcess) {
-            try { geminiImageEngineProcess.kill(); } catch(e){}
-        }
+ipcMain.on('stop-flow-engine', () => {
+    if (flowEngineProcess) {
+        flowEngineProcess.send('shutdown');
+        setTimeout(() => { flowEngineProcess = null; }, 1000);
+    }
+});
 
-        console.log(`🚀 Starting Gemini Image Engine with Profile: ${accountName}`);
-        geminiImageEngineProcess = fork(enginePath, [accountName], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
+let geminiImageEngineProcess = null;
 
-        // ইঞ্জিন থেকে আসা লাইভ কনসোল এবং স্ট্যাটাস আপডেট UI-তে পাঠানো
-        geminiImageEngineProcess.on('message', (msg) => {
-            if (msg.type === 'console') {
-                sendToUIConsole(msg.logType, msg.text); // লাইভ কনসোলে প্রিন্ট হবে
-            } else if (msg.type === 'status') {
-                if (mainWindow && !mainWindow.isDestroyed()) {
-                    mainWindow.webContents.send('gemini-image-status', msg); // প্রগ্রেস বার আপডেট করবে
-                }
+ipcMain.on('start-gemini-image-engine', (event, data) => {
+    const { prompts, accountName } = data;
+    const enginePath = path.join(__dirname, 'AI_Workers', 'gemini_image_engine.js');
+
+    if (geminiImageEngineProcess) {
+        try { geminiImageEngineProcess.kill(); } catch(e){}
+    }
+
+    console.log(`🚀 Starting Gemini Image Engine with Profile: ${accountName}`);
+    geminiImageEngineProcess = fork(enginePath, [accountName], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
+
+    geminiImageEngineProcess.on('message', (msg) => {
+        if (msg.type === 'console') {
+            sendToUIConsole(msg.logType, msg.text, 'gemini'); 
+        } else if (msg.type === 'status') {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('gemini-image-status', msg); 
             }
-        });
-
-        // প্রম্পটগুলো দিয়ে ইঞ্জিন স্টার্ট করা
-        geminiImageEngineProcess.send({ type: 'start', prompts: prompts });
-    });
-
-    ipcMain.on('resume-gemini-image-engine', () => {
-        if (geminiImageEngineProcess) geminiImageEngineProcess.send({ type: 'resume' });
-    });
-
-    ipcMain.on('stop-gemini-image-engine', () => {
-        if (geminiImageEngineProcess) {
-            geminiImageEngineProcess.send('shutdown');
-            setTimeout(() => { geminiImageEngineProcess = null; }, 1000);
         }
     });
+
+    geminiImageEngineProcess.send({ type: 'start', prompts: prompts });
+});
+
+ipcMain.on('resume-gemini-image-engine', () => {
+    if (geminiImageEngineProcess) geminiImageEngineProcess.send({ type: 'resume' });
+});
+
+ipcMain.on('stop-gemini-image-engine', () => {
+    if (geminiImageEngineProcess) {
+        geminiImageEngineProcess.send('shutdown');
+        setTimeout(() => { geminiImageEngineProcess = null; }, 1000);
+    }
+});
 
 app.on('window-all-closed', () => {
     for (let id in activeEngines) {
