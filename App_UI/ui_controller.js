@@ -118,6 +118,92 @@ window.updateDashboardSystemStatus = function(id, isConnected) {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
 
+    // ==========================================
+    // 🔴 MAGIC FIX: Notification Logic (100% Electron Safe, No Duplicates)
+    // ==========================================
+    const notifBadge = document.getElementById('mainNotifBadge');
+              
+    function updateNotifBadge() {
+        const unreadCount = document.querySelectorAll('.notif-item.unread').length;
+        if (notifBadge) notifBadge.style.display = unreadCount > 0 ? 'block' : 'none';
+    }
+
+    const notifItems = document.querySelectorAll('.notif-item');
+    notifItems.forEach(item => {
+        item.removeAttribute('onclick');
+        
+        const preview = item.querySelector('.notif-preview');
+        const fullBody = item.querySelector('.notif-full-body');
+        
+        if (fullBody) {
+            fullBody.style.maxHeight = '0px';
+            fullBody.style.overflow = 'hidden';
+            fullBody.style.opacity = '0';
+            fullBody.style.marginTop = '0px';
+            fullBody.style.paddingTop = '0px';
+            fullBody.style.transition = 'all 0.4s ease';
+        }
+
+        item.addEventListener('click', function(e) {
+            e.stopPropagation(); 
+            const isExpanded = this.classList.contains('expanded');
+            
+            if (isExpanded) {
+                this.classList.remove('expanded');
+                if (preview) preview.style.display = 'block';
+                if (fullBody) {
+                    fullBody.style.maxHeight = '0px';
+                    fullBody.style.opacity = '0';
+                    fullBody.style.marginTop = '0px';
+                    fullBody.style.paddingTop = '0px';
+                    fullBody.style.borderTop = 'none';
+                }
+            } else {
+                this.classList.add('expanded');
+                if (preview) preview.style.display = 'none';
+                if (fullBody) {
+                    fullBody.style.maxHeight = '500px';
+                    fullBody.style.opacity = '1';
+                    fullBody.style.marginTop = '10px';
+                    fullBody.style.paddingTop = '10px';
+                    fullBody.style.borderTop = '1px solid rgba(255, 255, 255, 0.05)';
+                }
+            }
+            
+            if (this.classList.contains('unread')) {
+                this.classList.replace('unread', 'read');
+                this.style.background = 'transparent';
+                const dot = this.querySelector('.notif-unread-dot');
+                if (dot) {
+                    dot.style.opacity = '0';
+                    dot.style.transform = 'scale(0)';
+                }
+                updateNotifBadge();
+            }
+        });
+    });
+
+    const markAllBtn = document.getElementById('markAllReadBtn');
+    if (markAllBtn) {
+        markAllBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.notif-item.unread').forEach(item => {
+                item.classList.replace('unread', 'read');
+                item.style.background = 'transparent';
+                const dot = item.querySelector('.notif-unread-dot');
+                if (dot) {
+                    dot.style.opacity = '0';
+                    dot.style.transform = 'scale(0)';
+                }
+            });
+            updateNotifBadge();
+        });
+    }
+    
+    updateNotifBadge();
+    // ==========================================
+
+
     const hour = new Date().getHours();
     const gEl = document.getElementById('greeting');
     if (gEl) gEl.textContent = hour < 12 ? 'Good morning.' : hour < 18 ? 'Good afternoon.' : 'Good evening.';
@@ -186,7 +272,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.popover').forEach((p) => p.classList.remove('open')); });
 
-    // 🔴 MAGIC FIX: COPY BUTTON LOGIC
     const foCopyBtn = document.getElementById('foCopyBtn');
     if (foCopyBtn) {
         foCopyBtn.addEventListener('click', () => {
@@ -202,6 +287,87 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==========================================
+    // 🔴 MAGIC FIX: GitHub Version History Fetcher (100% Secure & Tokenless)
+    // ==========================================
+    const btnVersionHistory = document.getElementById('btnVersionHistory');
+    const versionHistoryPanel = document.getElementById('versionHistoryPanel');
+    const versionListContent = document.getElementById('versionListContent');
+
+    if (btnVersionHistory && versionHistoryPanel && versionListContent) {
+        btnVersionHistory.addEventListener('click', async () => {
+            // প্যানেল ওপেন/ক্লোজ টগল করা
+            if (versionHistoryPanel.style.display === 'block') {
+                versionHistoryPanel.style.display = 'none';
+                return;
+            }
+
+            versionHistoryPanel.style.display = 'block';
+            versionListContent.innerHTML = '<div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 10px;">Connecting to GitHub Engine...</div>';
+
+            try {
+                // 🔴 PRO TIP: পাবলিক রিপোর জন্য কোনো টোকেন লাগে না! সরাসরি API কল।
+                const repoUrl = 'https://api.github.com/repos/AtawurRahmanTanvir/Creator-Engine-Pro/releases';
+                
+                const response = await fetch(repoUrl, {
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (!response.ok) {
+                    if(response.status === 403) throw new Error('API Rate Limit Exceeded. Try again later.');
+                    throw new Error('Failed to fetch from GitHub');
+                }
+                
+                const releases = await response.json();
+
+                versionListContent.innerHTML = ''; 
+
+                if (releases.length === 0) {
+                    versionListContent.innerHTML = '<div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 10px;">No previous versions found.</div>';
+                    return;
+                }
+
+                // গিটহাব থেকে পাওয়া ডেটা দিয়ে সুন্দর করে লিস্ট তৈরি করা
+                releases.forEach((release, index) => {
+                    const isLatest = index === 0; // প্রথম আইটেমটাই সবসময় Latest
+                    const date = new Date(release.published_at).toLocaleDateString();
+                    
+                    const versionBox = document.createElement('div');
+                    versionBox.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);';
+                    
+                    versionBox.innerHTML = `
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 13px; font-weight: 600; color: #fff;">${release.tag_name}</span>
+                                ${isLatest ? `<span style="font-size: 9px; background: rgba(0, 198, 255, 0.15); color: #00c6ff; padding: 2px 6px; border-radius: 10px; border: 1px solid rgba(0, 198, 255, 0.3);">Current</span>` : ''}
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px;">Published: ${date}</div>
+                        </div>
+                        <button class="switch-version-btn" data-version="${release.tag_name}" style="background: ${isLatest ? 'transparent' : 'rgba(201, 154, 91, 0.1)'}; border: 1px solid ${isLatest ? '#444' : 'rgba(201, 154, 91, 0.3)'}; color: ${isLatest ? '#888' : '#C99A5B'}; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: ${isLatest ? 'default' : 'pointer'}; transition: 0.2s;">
+                            ${isLatest ? 'Active' : 'Switch'}
+                        </button>
+                    `;
+                    versionListContent.appendChild(versionBox);
+                });
+
+                // Switch বাটনের ক্লিক ইভেন্ট
+                document.querySelectorAll('.switch-version-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const ver = e.target.getAttribute('data-version');
+                        if (e.target.textContent.trim() !== 'Active') {
+                            alert(`Rollback Engine Initialized.\n\nTarget: ${ver}\n\nDowngrade request sent to Main Process. (Feature locked in current build)`);
+                        }
+                    });
+                });
+
+            } catch (error) {
+                versionListContent.innerHTML = `<div style="text-align: center; color: var(--color-error); font-size: 12px; padding: 10px;">Connection Error: ${error.message}</div>`;
+            }
+        });
+    }
+    
     // ==========================================
     // ৪. ANIMATIONS (CountUp & Hover Effects)
     // ==========================================
@@ -444,7 +610,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (window.logLine) {
                 window.logLine(data.type, data.text);
                 
-                // Map system colors and names for the live activity feed
                 let sysColor = 'accent-primary';
                 let sysName = 'System';
                 const lowerText = data.text.toLowerCase();
@@ -702,7 +867,6 @@ document.addEventListener('DOMContentLoaded', () => {
         getInfraLinkEls(id).forEach((el) => el.classList.toggle('is-dim', !enabled));
         updateLegend();
 
-        // Though prompt/final aren't in the dashboard system list usually, this is safe to add.
         if (window.updateDashboardSystemStatus) window.updateDashboardSystemStatus(id, enabled);
 
         if (isUserClick) triggerEngine(id, enabled, sys.account);
@@ -777,7 +941,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 🔴 MAGIC FIX: STOP ALL BUTTON LOGIC
     const stopAllBtn = document.getElementById('stopAllBtn');
     if (stopAllBtn) {
         stopAllBtn.addEventListener('click', () => {
@@ -804,15 +967,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const autoChip = document.querySelector('.target-chip[data-target="auto"]');
 
     if (composerInput) {
-        // 🔴 MAGIC FIX: Prompt box auto-resize (Perfectly Smooth to 80px)
         composerInput.addEventListener('input', function () {
-            // 1. Force height down to 80px to allow scrollHeight to shrink
             this.style.height = '80px'; 
-            
-            // 2. Measure the exact new content height
             let newHeight = this.scrollHeight;
-            
-            // 3. Apply constraints
             if (newHeight >= 180) {
                 this.style.height = '180px';
                 this.style.overflowY = 'auto';
@@ -972,10 +1129,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
-                // 🔴 MAGIC FIX: Reset box perfectly after sending
                 composerInput.value = ''; 
-                
-                // Explicitly return to base height 80px, NOT 'auto' or '24px'
                 composerInput.style.height = '80px'; 
                 composerInput.style.overflowY = 'hidden'; 
                 
@@ -1017,7 +1171,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const queueCount = document.getElementById(`${prefix}-queueCount`);
         if (!editor || !gutter) return;
 
-        // 🔴 MAGIC FIX: লোকাল ভেরিয়েবল যোগ করা হলো রিয়েল-টাইম কাউন্টের জন্য
         let activeTotal = 0;
         let activeCompleted = 0;
 
@@ -1068,7 +1221,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!lines.length) return;
             sessionState = 'running'; updateBtns();
 
-            // 🔴 MAGIC FIX: স্টার্ট বাটনে ক্লিক করলেই টোটাল কাউন্ট সেভ করে প্রগ্রেস বার ইনিশিয়ালাইজ করা
             activeTotal = lines.length;
             activeCompleted = 0;
             updateProgressUI(activeCompleted, activeTotal);
@@ -1078,7 +1230,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const stateText = document.getElementById(`${prefix}-currentStateText`); if (stateText) stateText.textContent = 'Launching Engine...';
 
             const acc = localStorage.getItem('activeRootAccount') || (prefix === 'gemini' ? 'Gemini_Profile' : 'Flow_Profile');
-            if (ipcRenderer) ipcRenderer.send(`start-${prefix === 'gemini' ? 'gemini-image' : 'flow'}-engine`, { prompts: lines, accountName: acc });
+            
+            const browserSpan = document.getElementById(`${prefix}-selected-browser`);
+            const bName = browserSpan ? browserSpan.dataset.value : 'chrome';
+
+            if (ipcRenderer) {
+                ipcRenderer.send(`start-${prefix === 'gemini' ? 'gemini-image' : 'flow'}-engine`, { 
+                    prompts: lines, 
+                    accountName: acc, 
+                    browserName: bName 
+                });
+            }
         });
 
         if (resumeBtn) resumeBtn.addEventListener('click', () => {
@@ -1096,7 +1258,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const stateText = document.getElementById(`${prefix}-currentStateText`); if (stateText) stateText.textContent = 'Idle';
             const currentP = document.getElementById(`${prefix}-currentPromptText`); if (currentP) currentP.textContent = '—';
 
-            // 🔴 MAGIC FIX: রিসেট করলে প্রগ্রেস বারও জিরো করা
             activeCompleted = 0;
             activeTotal = 0;
             updateProgressUI(0, 0);
@@ -1120,12 +1281,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (msg.state === 'prompt') {
                     const currentP = document.getElementById(`${prefix}-currentPromptText`); if (currentP) currentP.textContent = msg.text;
                     
-                    // 🔴 MAGIC FIX: ব্যাকএন্ড 'progress' ইভেন্ট না পাঠালেও, 'prompt' ইভেন্ট থেকে ম্যানুয়ালি প্রগ্রেস কাউন্ট হবে
                     updateProgressUI(activeCompleted, activeTotal);
-                    activeCompleted++; // পরবর্তী প্রম্পটের জন্য কাউন্ট ১ বাড়িয়ে রাখা
+                    activeCompleted++; 
 
                 } else if (msg.state === 'progress') {
-                    // যদি কখনো ব্যাকএন্ড থেকে সঠিক ডাটা আসে, সেটা দিয়েই ওভাররাইড হবে
                     if (msg.completed !== undefined) activeCompleted = msg.completed;
                     if (msg.total !== undefined) activeTotal = msg.total;
                     updateProgressUI(activeCompleted, activeTotal);
@@ -1134,7 +1293,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     sessionState = 'complete'; updateBtns();
                     const stateText = document.getElementById(`${prefix}-currentStateText`); if (stateText) stateText.textContent = 'All Prompts Completed';
                     
-                    // কাজ শেষ হলে ম্যানুয়ালি প্রগ্রেস ১০০% করে দেয়া
                     activeCompleted = activeTotal > 0 ? activeTotal : 1; 
                     activeTotal = activeCompleted;
                     updateProgressUI(activeCompleted, activeTotal);
@@ -1173,7 +1331,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ১০. SYSTEM OVERVIEW AUTO-UPDATER
     // ==========================================
     setInterval(() => {
-        // ১. Workflow Stage (কতগুলো ওয়ার্কার কাজ করছে তার ওপর ভিত্তি করে)
         const activeWorkers = enabledWorkerIds().length;
         const stageEl = document.querySelector('.page-workspace .stat-card:nth-child(1) .stat-value [data-count-to]');
         if (stageEl) {
@@ -1181,14 +1338,12 @@ document.addEventListener('DOMContentLoaded', () => {
             stageEl.textContent = activeWorkers > 0 ? '2' : '1';
         }
 
-        // ২. Workers Collaborating (এক্টিভ ওয়ার্কারের সংখ্যা)
         const collabEl = document.querySelector('.page-workspace .stat-card:nth-child(2) .stat-value [data-count-to]');
         if (collabEl) {
             collabEl.dataset.countTo = activeWorkers;
             collabEl.textContent = activeWorkers;
         }
 
-        // ৩. System Health (পোর্ট ও ব্রাউজার কানেকশনের ওপর ভিত্তি করে)
         const healthEl = document.querySelector('.page-workspace .stat-card:nth-child(3) .stat-value [data-count-to]');
         if (healthEl) {
             const health = activeWorkers === 0 ? 100 : Math.max(80, 100 - (7 - activeWorkers) * 2);
@@ -1196,7 +1351,6 @@ document.addEventListener('DOMContentLoaded', () => {
             healthEl.textContent = health;
         }
 
-        // ৪. Reports Completed (কতগুলো আউটপুট বের হয়েছে)
         const reportsEl = document.querySelector('.page-workspace .stat-card:nth-child(4) .stat-value [data-count-to]');
         if (reportsEl) {
             reportsEl.dataset.countTo = window.LiveStats.workflows;

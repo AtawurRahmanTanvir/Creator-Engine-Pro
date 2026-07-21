@@ -226,19 +226,120 @@ const randomDelay = (min, max) => new Promise(resolve => setTimeout(resolve, Mat
                 break;
 
             case State.OUTPUT_COPIED: 
-                currentOutput = await page.evaluate(() => {
-                    const blocks = Array.from(document.querySelectorAll('model-response, message-content, .message-content, [data-test-id="model-response"]'));
-                    if (blocks.length === 0) return "[ERROR] No AI response found on page.";
-                    
-                    const lastResponse = blocks[blocks.length - 1];
-                    const clone = lastResponse.cloneNode(true);
-                    clone.querySelectorAll('button, svg, [role="button"], span.sr-only, .info-icon').forEach(el => el.remove());
-                    return clone.innerText.trim();
-                });
+                console.log(`[STATE] 📋 Extracting text with Multi-Tier Fallback...`);
                 
+                try {
+                    let extractedText = null;
+
+                    // ==========================================
+                    // 🚀 PLAN A: Smart DOM Extractor (Best for Tables/Code)
+                    // ==========================================
+                    extractedText = await page.evaluate(() => {
+                        try {
+                            let messages = Array.from(document.querySelectorAll('div[data-message-author-role="assistant"], .prose, .markdown-body, .markdown, model-response, message-content, [data-test-id="model-response"], div[dir="auto"]'));
+                            messages = messages.filter(m => !m.closest('[role="dialog"]') && m.innerText.trim().length > 0);
+                            
+                            if (messages.length > 0) {
+                                const lastMessage = messages[messages.length - 1];
+                                const clone = lastMessage.cloneNode(true);
+                                
+                                // Clean garbage
+                                clone.querySelectorAll('button, svg, img, [role="button"], span.sr-only, .visually-hidden, a.citation, style, script, footer, details').forEach(el => el.remove());
+                                
+                                // Format Tables to Markdown
+                                clone.querySelectorAll('table').forEach(table => {
+                                    const rows = Array.from(table.querySelectorAll('tr'));
+                                    let tableText = '\n\n';
+                                    rows.forEach((row, index) => {
+                                        const cells = Array.from(row.querySelectorAll('th, td'));
+                                        const rowText = cells.map(cell => cell.innerText.trim().replace(/\n/g, ' ')).join(' | ');
+                                        tableText += '| ' + rowText + ' |\n';
+                                        if(index === 0) tableText += '|' + cells.map(() => '---').join('|') + '|\n';
+                                    });
+                                    tableText += '\n';
+                                    table.parentNode.replaceChild(document.createTextNode(tableText), table);
+                                });
+
+                                // Format Code Blocks to Markdown
+                                clone.querySelectorAll('pre').forEach(pre => {
+                                    const code = pre.innerText.trim();
+                                    pre.parentNode.replaceChild(document.createTextNode('\n\n```\n' + code + '\n```\n\n'), pre);
+                                });
+
+                                // Ensure proper line breaks for paragraphs and lists
+                                clone.querySelectorAll('p, h1, h2, h3, h4, li').forEach(el => {
+                                    el.parentNode.replaceChild(document.createTextNode(el.innerText.trim() + '\n\n'), el);
+                                });
+
+                                return clone.innerText.trim().replace(/\n{3,}/g, '\n\n');
+                            }
+                            return null;
+                        } catch(e) { return null; }
+                    });
+
+                    // ==========================================
+                    // 🛡️ PLAN B: Native Copy Button & Clipboard
+                    // ==========================================
+                    if (!extractedText || extractedText.trim() === "") {
+                        console.log(`[WARNING] Plan A failed. Attempting Plan B: Native Copy Button...`);
+                        const isCopied = await page.evaluate(async () => {
+                            const btns = Array.from(document.querySelectorAll('button, div[role="button"]')).filter(b => 
+                                (b.getAttribute('aria-label') || '').toLowerCase().includes('copy') || 
+                                (b.title || '').toLowerCase().includes('copy') ||
+                                (b.className || '').toLowerCase().includes('copy')
+                            );
+                            // Avoid dialog/popup copy buttons
+                            const chatBtns = btns.filter(b => !b.closest('[role="dialog"]') && !b.closest('[class*="banner"]') && !b.closest('footer'));
+                            
+                            if (chatBtns.length > 0) {
+                                chatBtns[chatBtns.length - 1].click();
+                                return true;
+                            }
+                            return false;
+                        });
+
+                        if (isCopied) {
+                            await page.waitForTimeout(1000); 
+                            extractedText = await page.evaluate(async () => {
+                                try { return await navigator.clipboard.readText(); } catch (e) { return null; }
+                            });
+                        }
+                    }
+
+                    // ==========================================
+                    // 🪂 PLAN C: Ultimate Raw Fallback
+                    // ==========================================
+                    if (!extractedText || extractedText.trim() === "") {
+                        console.log(`[WARNING] Plan B failed. Attempting Plan C: Raw Extraction...`);
+                        extractedText = await page.evaluate(() => {
+                            const fallbacks = document.querySelectorAll('.prose, .markdown, .markdown-body, div[dir="auto"], div[data-message-author-role="assistant"]');
+                            if(fallbacks.length > 0) return fallbacks[fallbacks.length - 1].innerText.trim();
+                            return "[ERROR] System could not extract text."; 
+                        });
+                    }
+
+                    currentOutput = extractedText;
+
+                    // ==========================================
+                    // 🔴 Universal Cleanup (Qwen/DeepSeek/Claude/etc)
+                    // ==========================================
+                    if (currentOutput) {
+                        currentOutput = currentOutput.replace(/^Thinking completed.*?[\r\n]+/i, '');
+                        currentOutput = currentOutput.replace(/^Thinking.*?[\r\n]+/i, '');
+                        currentOutput = currentOutput.replace(/^Claude responded:?\s*/i, ''); 
+                        currentOutput = currentOutput.replace(/^Thought for .*?s\s*/i, ''); 
+                        currentOutput = currentOutput.replace(/AI-generated content may not be accurate.*/gi, '');
+                        currentOutput = currentOutput.trim();
+                    }
+
+                } catch (err) { 
+                    currentOutput = `[ERROR] All Extraction Plans Failed: ${err.message}`; 
+                }
+
                 if (!currentOutput || currentOutput.trim() === "") {
                     currentOutput = "[ERROR] Extracted text was empty.";
                 }
+                
                 currentState = State.OUTPUT_SAVED;
                 break;
 

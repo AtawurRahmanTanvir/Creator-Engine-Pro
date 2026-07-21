@@ -3361,6 +3361,54 @@
       }
     }
   </style>
+  <!-- 🔥 Clear Queue & Reset Button Hover Effects 🔥 -->
+  <style>
+    /* Clear Queue Hover (Red/Danger) */
+    #flow-clearQueueBtn,
+    #gemini-clearQueueBtn {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    #flow-clearQueueBtn:hover,
+    #gemini-clearQueueBtn:hover {
+      background: rgba(225, 104, 95, 0.1) !important;
+      border-color: var(--color-error) !important;
+      color: var(--color-error) !important;
+      box-shadow: 0 0 15px rgba(225, 104, 95, 0.25) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Reset Button Hover (Orange/Warning & Spin) */
+    #flow-resetBtn,
+    #gemini-resetBtn {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    #flow-resetBtn:hover,
+    #gemini-resetBtn:hover {
+      background: rgba(208, 139, 62, 0.1) !important;
+      border-color: var(--color-warning) !important;
+      color: var(--color-warning) !important;
+      box-shadow: 0 0 15px rgba(208, 139, 62, 0.25) !important;
+      transform: translateY(-1px);
+    }
+
+    /* Spinning Icon Animation for Reset */
+    #flow-resetBtn:hover svg,
+    #gemini-resetBtn:hover svg {
+      animation: resetSpin 0.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes resetSpin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(-360deg);
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -3577,7 +3625,7 @@
       <!-- ============ MAIN CONTENT AREA ============ -->
       <div class="main">
 
-        <header class="topbar">
+        <header class="topbar" style="position: relative; z-index: 9999;">
           <span class="page-title" id="topbar-page-title">Dashboard</span>
           <div class="topbar-right">
             <div class="search-field">
@@ -3595,11 +3643,12 @@
                   <path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8z" />
                   <path d="M9.5 17a2.5 2.5 0 0 0 5 0" />
                 </svg>
-                <span class="badge-dot"></span>
+                <span class="badge-dot" id="mainNotifBadge"></span>
               </button>
 
               <div class="popover popover--down" id="notifPopover"
-                style="width: 380px; padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 480px;">
+                style="width: 380px; padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: calc(100vh - 80px); z-index: 9999; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+
                 <div
                   style="padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface);">
                   <h3
@@ -3610,53 +3659,134 @@
                     </svg>
                     Inbox
                   </h3>
-                  <span style="font-size: 11px; font-weight: 500; color: var(--accent-primary); cursor: pointer;">Mark
-                    all read</span>
+                  <span id="markAllReadBtn"
+                    style="font-size: 11px; font-weight: 500; color: var(--accent-primary); cursor: pointer; transition: 0.2s;"
+                    onmouseover="this.style.filter='brightness(1.2)'" onmouseout="this.style.filter='none'">Mark all
+                    read</span>
                 </div>
 
+                <style>
+                  .notif-item {
+                    padding: 16px;
+                    border-bottom: 1px solid var(--border-subtle);
+                    display: flex;
+                    gap: 14px;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                  }
+
+                  .notif-item:hover {
+                    background: var(--bg-elevated) !important;
+                  }
+
+                  /* Preview Line */
+                  .notif-preview {
+                    font-size: 12px;
+                    color: var(--text-tertiary);
+                    line-height: 1.5;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    display: block;
+                    margin-top: 4px;
+                  }
+
+                  /* Full Body (Controlled by JS) */
+                  .notif-full-body {
+                    font-size: 12px;
+                    color: var(--text-tertiary);
+                    line-height: 1.6;
+                  }
+
+                  /* Unread Dot */
+                  .notif-unread-dot {
+                    position: absolute;
+                    top: -2px;
+                    right: -2px;
+                    width: 10px;
+                    height: 10px;
+                    background: var(--color-error);
+                    border: 2px solid var(--bg-surface);
+                    border-radius: 50%;
+                    transition: opacity 0.3s, transform 0.3s;
+                  }
+                </style>
+
                 <div style="overflow-y: auto; display: flex; flex-direction: column; flex: 1;">
-                  <div
-                    style="padding: 16px; border-bottom: 1px solid var(--border-subtle); background: rgba(201, 154, 91, 0.08); display: flex; gap: 14px; cursor: pointer; transition: background 0.2s;"
-                    onmouseover="this.style.background='var(--bg-elevated)'"
-                    onmouseout="this.style.background='rgba(201, 154, 91, 0.08)'">
+
+                  <div class="notif-item unread" style="background: rgba(0, 198, 255, 0.06);">
+                    <div style="position: relative;">
+                      <div
+                        style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; display: flex; align-items: center; justify-content: center;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                          style="width: 20px; height: 20px;">
+                          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                        </svg>
+                      </div>
+                      <div class="notif-unread-dot"></div>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div
+                        style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: #00c6ff;">System Update</h4>
+                        <span style="font-size: 11px; color: #00c6ff; font-weight: 500;">Just now</span>
+                      </div>
+                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 600; color: var(--text-primary);">Creator
+                        Engine Pro v1.0.1 is Live! ✨</h5>
+                      <div class="notif-preview">Multi-browser core (Super 7) and advanced stealth error handling are
+                        now active...</div>
+                      <div class="notif-full-body">
+                        <strong>What's new in this major release:</strong><br><br>
+                        • <strong>Super 7 Browsers:</strong> Added full automated integration for Chrome, Edge, Brave,
+                        Opera, Vivaldi, Firefox, and Tor Browser.<br><br>
+                        • <strong>Universal Extractor:</strong> Implemented a 3-Tier fallback logic to completely
+                        eliminate "Extraction Failed" bugs across all AI engines. Tables, lists, and code blocks now
+                        format perfectly.<br><br>
+                        • <strong>Premium UI:</strong> 3D Cyberpunk consoles, animated HOT/PRO badges, and interactive
+                        UX upgrades applied globally.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="notif-item unread" style="background: rgba(201, 154, 91, 0.08);">
                     <div style="position: relative;">
                       <div
                         style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-primary); color: var(--bg-void); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
                         AR</div>
-                      <div
-                        style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: var(--color-error); border: 2px solid var(--bg-surface); border-radius: 50%;">
-                      </div>
+                      <div class="notif-unread-dot"></div>
                     </div>
                     <div style="flex: 1; min-width: 0;">
                       <div
                         style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
                         <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--text-primary);">Atawur
                           Rahman</h4>
-                        <span style="font-size: 11px; color: var(--accent-primary); font-weight: 500;">Just now</span>
+                        <span style="font-size: 11px; color: var(--accent-primary); font-weight: 500;">5m ago</span>
                       </div>
-                      <h5 style="margin: 0 0 6px 0; font-size: 12px; font-weight: 600; color: var(--text-primary);">
-                        Welcome to Creator Engine Pro! 🚀</h5>
-                      <p style="margin: 0; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 600; color: var(--text-primary);">Welcome to
+                        Creator Engine Pro! 🚀</h5>
+                      <div class="notif-preview">Hello! I'm a student at Barishal Polytechnic Institute (BPI). As a
+                        student...</div>
+                      <div class="notif-full-body">
                         Hello! I'm a student at <strong>Barishal Polytechnic Institute (BPI)</strong>. As a student, I
                         constantly try to bring my imagination to reality. I have spent many sleepless nights coding and
                         building this software for you to make your workflow easier. Thank you for being a part of this
                         journey. Enjoy creating!
-                      </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div
-                    style="padding: 16px; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 14px; cursor: pointer; transition: background 0.2s;"
-                    onmouseover="this.style.background='var(--bg-elevated)'"
-                    onmouseout="this.style.background='transparent'">
-                    <div
-                      style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-tertiary); display: flex; align-items: center; justify-content: center;">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        style="width: 20px; height: 20px;">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <path d="M9 3v18" />
-                        <path d="M15 3v18" />
-                      </svg>
+                  <div class="notif-item read" style="background: transparent;">
+                    <div style="position: relative;">
+                      <div
+                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-tertiary); display: flex; align-items: center; justify-content: center;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                          style="width: 20px; height: 20px;">
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <path d="M9 3v18" />
+                          <path d="M15 3v18" />
+                        </svg>
+                      </div>
+                      <div class="notif-unread-dot" style="opacity: 0; transform: scale(0);"></div>
                     </div>
                     <div style="flex: 1; min-width: 0;">
                       <div
@@ -3665,14 +3795,16 @@
                           Updates</h4>
                         <span style="font-size: 11px; color: var(--text-tertiary);">2 hrs ago</span>
                       </div>
-                      <h5 style="margin: 0 0 4px 0; font-size: 12px; font-weight: 500; color: var(--text-secondary);">AI
+                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 500; color: var(--text-secondary);">AI
                         Workspace Initialized</h5>
-                      <p
-                        style="margin: 0; font-size: 12px; color: var(--text-tertiary); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      <div class="notif-preview">Your environment is ready. You can now start adding prompts...</div>
+                      <div class="notif-full-body">
                         Your environment is ready. You can now start adding prompts and automate your tasks smoothly.
-                      </p>
+                        All AI nodes are waiting for dispatch signals from the orchestrator.
+                      </div>
                     </div>
                   </div>
+
                 </div>
 
                 <div
@@ -3738,7 +3870,8 @@
               </section>
 
               <section class="quick-actions">
-                <p class="text-label" style="color: var(--text-tertiary); margin-bottom: var(--space-3);">Quick actions
+                <p class="text-label" style="color: var(--text-tertiary); margin-bottom: var(--space-3);">Quick
+                  actions
                 </p>
                 <div class="quick-actions-row">
                   <button class="btn btn--secondary"
@@ -3938,8 +4071,153 @@
                 <p class="text-body">Queue image prompts and run the generation automation, one line at a time.</p>
               </div>
 
+              <!-- ✨ 3D Console & Premium UI Styles for Gemini ✨ -->
+              <style>
+                /* Animated Fire Badges */
+                .badge-fire {
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 4px;
+                  background: linear-gradient(135deg, #e64a19, #f57c00);
+                  color: #fff;
+                  font-size: 9px;
+                  font-weight: 700;
+                  padding: 3px 6px;
+                  border-radius: 4px;
+                  letter-spacing: 0.05em;
+                  text-transform: uppercase;
+                  box-shadow: 0 0 4px rgba(245, 124, 0, 0.2);
+                  animation: fireGlowSoft 2.5s infinite alternate ease-in-out;
+                  margin-left: 8px;
+                  line-height: 1;
+                }
+
+                .badge-new {
+                  background: linear-gradient(135deg, #0288d1, #26c6da);
+                  box-shadow: 0 0 4px rgba(38, 198, 218, 0.2);
+                  animation: iceGlowSoft 2.5s infinite alternate ease-in-out;
+                }
+
+                @keyframes fireGlowSoft {
+                  from {
+                    box-shadow: 0 0 2px rgba(245, 124, 0, 0.1);
+                    transform: scale(1);
+                  }
+
+                  to {
+                    box-shadow: 0 0 6px rgba(245, 124, 0, 0.35);
+                    transform: scale(1.02);
+                  }
+                }
+
+                @keyframes iceGlowSoft {
+                  from {
+                    box-shadow: 0 0 2px rgba(38, 198, 218, 0.1);
+                    transform: scale(1);
+                  }
+
+                  to {
+                    box-shadow: 0 0 6px rgba(38, 198, 218, 0.35);
+                    transform: scale(1.02);
+                  }
+                }
+
+                /* Premium Editor Panels */
+                .gemini-editor-panel {
+                  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+                  display: flex;
+                  flex-direction: column;
+                }
+
+                .gemini-editor-panel:focus-within {
+                  border-color: var(--ai-gemini) !important;
+                  box-shadow: 0 0 0 1px var(--ai-gemini), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+                }
+
+                .gemini-editor-body {
+                  flex: 1;
+                  display: flex;
+                  align-items: stretch !important;
+                  min-height: 460px;
+                }
+
+                .gemini-gutter {
+                  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+                  min-height: 100%;
+                }
+
+                .gemini-textarea {
+                  color: #F8FAFC !important;
+                  font-size: 13.5px !important;
+                  line-height: 1.7 !important;
+                  min-height: 100%;
+                  transition: color 0.3s ease;
+                }
+
+                .gemini-textarea::placeholder {
+                  color: rgba(255, 255, 255, 0.2) !important;
+                }
+
+                .gemini-editor-panel:focus-within .gemini-gutter {
+                  color: var(--ai-gemini) !important;
+                  border-right-color: rgba(74, 135, 212, 0.4) !important;
+                  background: rgba(74, 135, 212, 0.05) !important;
+                }
+
+                /* Fancy Dropdown Buttons */
+                .premium-dropdown-btn {
+                  border: 1px solid var(--border-default) !important;
+                  transition: all 0.2s ease !important;
+                  background: linear-gradient(180deg, var(--bg-surface), var(--bg-base)) !important;
+                }
+
+                .premium-dropdown-btn:hover {
+                  border-color: var(--text-tertiary) !important;
+                  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+                }
+
+                /* 🌟 3D CYBERPUNK CONSOLE STYLES 🌟 */
+                .console-3d-wrapper {
+                  position: relative;
+                  border-radius: var(--radius-md);
+                  padding: 1px;
+                  /* Outer metallic border effect */
+                  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%);
+                  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+                  margin-top: var(--space-2);
+                }
+
+                .console-panel-3d {
+                  background: #030305 !important;
+                  /* Pitch black core */
+                  /* Deep inset shadow to make it look like a hole in the screen */
+                  box-shadow: inset 0 25px 50px rgba(0, 0, 0, 0.9),
+                    inset 0 0 15px rgba(74, 135, 212, 0.15) !important;
+                  border: none !important;
+                  border-radius: calc(var(--radius-md) - 1px) !important;
+                  position: relative;
+                  height: 280px !important;
+                  /* Slightly taller */
+                  z-index: 1;
+                }
+
+                /* CRT Scanline Overlay */
+                .console-3d-wrapper::after {
+                  content: "";
+                  position: absolute;
+                  inset: 1px;
+                  border-radius: calc(var(--radius-md) - 1px);
+                  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 135, 212, 0.04) 2px, rgba(74, 135, 212, 0.04) 4px);
+                  pointer-events: none;
+                  /* Allows scrolling underneath */
+                  z-index: 10;
+                  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+                  /* Inner dark vignette */
+                }
+              </style>
+
               <div class="runtime-grid">
-                <div class="editor-panel">
+                <div class="editor-panel gemini-editor-panel">
                   <div class="editor-toolbar">
                     <div class="editor-toolbar-left">
                       <span class="editor-toolbar-label text-label">Image Prompt Queue · one per line</span>
@@ -3956,21 +4234,140 @@
                       </button>
                     </div>
                   </div>
-                  <div class="editor-body">
-                    <div class="editor-gutter" id="gemini-editorGutter">1</div>
-                    <textarea class="editor-textarea" id="gemini-promptEditor" spellcheck="false"
+                  <div class="editor-body gemini-editor-body">
+                    <div class="editor-gutter gemini-gutter" id="gemini-editorGutter">1</div>
+                    <textarea class="editor-textarea gemini-textarea" id="gemini-promptEditor" spellcheck="false"
                       placeholder="A neon-lit cyberpunk alley reflected in rain-soaked pavement&#10;Studio portrait of an elderly fisherman, dramatic side light&#10;Macro shot of morning dew on a spider web at dawn"></textarea>
                   </div>
                 </div>
 
                 <div class="control-panel">
                   <div class="control-card">
+
+                    <!-- 🔴 ENGINE CONFIGURATION SECTION (GEMINI) -->
+                    <div
+                      style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                      <span class="text-label" style="color:var(--text-primary); font-weight: 600;">Engine
+                        Configuration</span>
+                      <span class="badge-fire badge-new">✨ v1.0.1</span>
+                    </div>
+
+                    <div
+                      style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; background: var(--bg-void); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);">
+
+                      <!-- Account Selector -->
+                      <div class="readout-row" style="margin: 0;">
+                        <span style="display: flex; align-items: center;">Account <span class="badge-fire">🔥
+                            HOT</span></span>
+                        <div class="topbar-item" style="position: relative;">
+                          <button class="btn btn--secondary premium-dropdown-btn"
+                            style="height: 30px; padding: 0 12px; font-size: 12px; display: flex; align-items: center; gap: 6px;"
+                            data-popover-target="pop-gemini-account">
+                            <span id="gemini-selected-account" style="font-weight: 500; color: #fff;">Default
+                              Profile</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ai-gemini)" stroke-width="2"
+                              stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                              <path d="M6 9l6 6 6-6" />
+                            </svg>
+                          </button>
+                          <div class="popover popover--down" id="pop-gemini-account"
+                            style="right: 0; min-width: 200px; z-index: 1000; max-height: 220px; overflow-y: auto;">
+                            <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch Account
+                            </div>
+                            <div id="gemini-custom-account-list">
+                              <!-- Populated dynamically by script -->
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Browser Selector -->
+                      <div class="readout-row" style="margin: 0;">
+                        <span style="display: flex; align-items: center;">Browser <span class="badge-fire"
+                            style="background: linear-gradient(135deg, #8A63D6, #C4634F);">🚀 PRO</span></span>
+                        <div class="topbar-item" style="position: relative;">
+                          <button class="btn btn--secondary premium-dropdown-btn"
+                            style="height: 30px; padding: 0 12px; font-size: 12px; display: flex; align-items: center; gap: 6px;"
+                            data-popover-target="pop-gemini-browser">
+                            <span id="gemini-selected-browser" data-value="chrome"
+                              style="font-weight: 500; color: #fff;">Google Chrome</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ai-gemini)" stroke-width="2"
+                              stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                              <path d="M6 9l6 6 6-6" />
+                            </svg>
+                          </button>
+                          <div class="popover popover--down" id="pop-gemini-browser"
+                            style="right: 0; min-width: 190px; z-index: 1001;">
+                            <div class="popover-label text-label" style="color:var(--text-tertiary);">Select Browser
+                            </div>
+                            <button class="popover-item" onclick="setGeminiBrowser('Google Chrome', 'chrome', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <circle cx="12" cy="12" r="10" />
+                                <circle cx="12" cy="12" r="4" />
+                                <path d="M21.17 8H12" />
+                                <path d="M3.95 6.06L8.54 14" />
+                                <path d="M10.88 21.94L15.46 14" />
+                              </svg> Chrome
+                            </button>
+                            <button class="popover-item" onclick="setGeminiBrowser('Microsoft Edge', 'edge', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#0078D7" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
+                              </svg> Edge
+                            </button>
+                            <button class="popover-item" onclick="setGeminiBrowser('Brave', 'brave', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#FF4B2B" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <path d="M12 2l8 5v5c0 5.25-3.5 10-8 12-4.5-2-8-6.75-8-12V7l8-5z" />
+                              </svg> Brave
+                            </button>
+                            <button class="popover-item" onclick="setGeminiBrowser('Opera', 'opera', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#FF1B2D" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <circle cx="12" cy="12" r="10" />
+                                <path
+                                  d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10 10 10 0 0 1-10-10 10 10 0 0 1 10-10z" />
+                              </svg> Opera
+                            </button>
+                            <button class="popover-item" onclick="setGeminiBrowser('Vivaldi', 'vivaldi', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#EF3939" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                              </svg> Vivaldi
+                            </button>
+                            <button class="popover-item" onclick="setGeminiBrowser('Firefox', 'firefox', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#FF9500" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 2a10 10 0 0 0-10 10c0 5.5 4.5 10 10 10s10-4.5 10-10c0-1.5-.3-3-.9-4.3" />
+                              </svg> Firefox
+                            </button>
+                            <div class="popover-divider"></div>
+                            <button class="popover-item" onclick="setGeminiBrowser('Tor Browser', 'tor', this)"
+                              style="color: #9c27b0;">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#9c27b0" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <circle cx="12" cy="12" r="10" />
+                                <circle cx="12" cy="12" r="6" />
+                                <circle cx="12" cy="12" r="2" />
+                              </svg> Tor Browser
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="control-divider" style="margin-bottom: 16px;"></div>
+                    <!-- 🔴 END CONFIGURATION SECTION -->
+
                     <div>
                       <span class="text-label" style="color:var(--text-tertiary);">Image Runtime</span>
                     </div>
 
                     <div class="control-buttons">
-                      <button class="btn btn--primary material-react" id="gemini-startBtn">
+                      <!-- Blue tint for Gemini -->
+                      <button class="btn btn--primary material-react" id="gemini-startBtn"
+                        style="background: var(--ai-gemini);">
                         <svg viewBox="0 0 24 24">
                           <path d="M7 4l13 8-13 8V4z" fill="currentColor" />
                         </svg>
@@ -4029,7 +4426,9 @@
                       <div class="progress-labels"><span>Progress</span><span id="gemini-progressPercent">0%</span>
                       </div>
                       <div class="progress-track">
-                        <div class="progress-fill" id="gemini-progressFill"></div>
+                        <!-- Blue progress bar for Gemini -->
+                        <div class="progress-fill" id="gemini-progressFill"
+                          style="background: linear-gradient(90deg, #26c6da, var(--ai-gemini));"></div>
                       </div>
                       <div class="progress-counts">
                         <div>
@@ -4046,15 +4445,73 @@
                 </div>
               </div>
 
+              <!-- 🌟 NEW: 3D CYBERPUNK CONSOLE SECTION 🌟 -->
               <section class="section">
                 <div class="section-header">
-                  <h2 class="text-subheading"><span class="live-dot"></span>Runtime Console</h2>
+                  <h2 class="text-subheading"><span class="live-dot"
+                      style="background: var(--ai-gemini);"></span>Runtime Console</h2>
                   <button class="btn btn--tertiary text-caption" id="gemini-clearConsoleBtn">Clear</button>
                 </div>
-                <div class="console-panel" id="gemini-consolePanel"></div>
+
+                <div class="console-3d-wrapper">
+                  <div class="console-panel console-panel-3d" id="gemini-consolePanel">
+                    <!-- Logs will dynamically inject here -->
+                  </div>
+                </div>
               </section>
             </div>
 
+            <!-- 🔴 Inline script for Gemini Dropdowns -->
+            <script>
+              function setGeminiBrowser(name, value, element) {
+                const displaySpan = document.getElementById('gemini-selected-browser');
+                if (displaySpan) {
+                  displaySpan.textContent = name;
+                  displaySpan.dataset.value = value;
+                }
+                const popover = element.closest('.popover');
+                if (popover) popover.classList.remove('open');
+              }
+
+              function updateGeminiAccountDropdown() {
+                if (typeof require === 'undefined') return;
+                const { ipcRenderer } = require('electron');
+                ipcRenderer.invoke('get-existing-accounts').then(accounts => {
+                  const listContainer = document.getElementById('gemini-custom-account-list');
+                  const displaySpan = document.getElementById('gemini-selected-account');
+                  if (!listContainer || !displaySpan) return;
+
+                  const lastAcc = localStorage.getItem('activeRootAccount') || 'Default Profile';
+                  displaySpan.textContent = accounts.includes(lastAcc) ? lastAcc : (accounts.length > 0 ? accounts[0] : 'Default Profile');
+
+                  listContainer.innerHTML = '';
+                  if (accounts.length === 0) {
+                    listContainer.innerHTML = '<p style="padding: 8px 12px; font-size: 12px; color: #777;">No accounts found.</p>';
+                    return;
+                  }
+
+                  accounts.forEach(acc => {
+                    const btn = document.createElement('button');
+                    btn.className = 'popover-item';
+                    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-right:8px; width:16px; height:16px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> ${acc}`;
+                    btn.onclick = function (e) {
+                      e.stopPropagation();
+                      displaySpan.textContent = acc;
+                      localStorage.setItem('activeRootAccount', acc);
+                      this.closest('.popover').classList.remove('open');
+                    };
+                    listContainer.appendChild(btn);
+                  });
+                });
+              }
+
+              document.addEventListener('click', (e) => {
+                if (e.target.closest('[data-popover-target="pop-gemini-account"]')) {
+                  updateGeminiAccountDropdown();
+                }
+              });
+              setTimeout(updateGeminiAccountDropdown, 1000);
+            </script>
 
             <!-- ========================================================================== -->
             <!-- PAGE: FLOW VIDEOS                                                          -->
@@ -4065,8 +4522,117 @@
                 <p class="text-body">Queue prompts and run the generation automation, one line at a time.</p>
               </div>
 
+              <!-- ✨ Soft Premium UI Styles for v1.0.1 ✨ -->
+              <style>
+                /* Refined, Elegant Animated Badges */
+                .badge-fire {
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 4px;
+                  background: linear-gradient(135deg, #e64a19, #f57c00);
+                  color: #fff;
+                  font-size: 9px;
+                  font-weight: 700;
+                  padding: 3px 6px;
+                  border-radius: 4px;
+                  letter-spacing: 0.05em;
+                  text-transform: uppercase;
+                  box-shadow: 0 0 4px rgba(245, 124, 0, 0.2);
+                  animation: fireGlowSoft 2.5s infinite alternate ease-in-out;
+                  margin-left: 8px;
+                  line-height: 1;
+                }
+
+                .badge-new {
+                  background: linear-gradient(135deg, #0288d1, #26c6da);
+                  box-shadow: 0 0 4px rgba(38, 198, 218, 0.2);
+                  animation: iceGlowSoft 2.5s infinite alternate ease-in-out;
+                }
+
+                @keyframes fireGlowSoft {
+                  from {
+                    box-shadow: 0 0 2px rgba(245, 124, 0, 0.1);
+                    transform: scale(1);
+                  }
+
+                  to {
+                    box-shadow: 0 0 6px rgba(245, 124, 0, 0.35);
+                    transform: scale(1.02);
+                  }
+                }
+
+                @keyframes iceGlowSoft {
+                  from {
+                    box-shadow: 0 0 2px rgba(38, 198, 218, 0.1);
+                    transform: scale(1);
+                  }
+
+                  to {
+                    box-shadow: 0 0 6px rgba(38, 198, 218, 0.35);
+                    transform: scale(1.02);
+                  }
+                }
+
+                /* Clean, Professional Editor Interactive Effect */
+                .premium-editor-panel {
+                  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+                  display: flex;
+                  flex-direction: column;
+                }
+
+                .premium-editor-panel:focus-within {
+                  border-color: var(--accent-primary) !important;
+                  /* Subtle inner and outer glow instead of harsh neon */
+                  box-shadow: 0 0 0 1px var(--accent-primary), 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+                }
+
+                /* FIX: Perfect stretching for Editor Body and Gutter */
+                .premium-editor-body {
+                  flex: 1;
+                  display: flex;
+                  align-items: stretch !important;
+                  /* Forces gutter and textarea to match heights perfectly */
+                  min-height: 460px;
+                }
+
+                .premium-gutter {
+                  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+                  min-height: 100%;
+                }
+
+                .premium-textarea {
+                  color: #F8FAFC !important;
+                  font-size: 13.5px !important;
+                  line-height: 1.7 !important;
+                  min-height: 100%;
+                  transition: color 0.3s ease;
+                }
+
+                .premium-textarea::placeholder {
+                  color: rgba(255, 255, 255, 0.2) !important;
+                }
+
+                .premium-editor-panel:focus-within .premium-gutter {
+                  color: var(--accent-primary) !important;
+                  border-right-color: rgba(201, 154, 91, 0.4) !important;
+                  background: rgba(201, 154, 91, 0.03) !important;
+                }
+
+                /* Fancy Dropdown Buttons */
+                .premium-dropdown-btn {
+                  border: 1px solid var(--border-default) !important;
+                  transition: all 0.2s ease !important;
+                  background: linear-gradient(180deg, var(--bg-surface), var(--bg-base)) !important;
+                }
+
+                .premium-dropdown-btn:hover {
+                  border-color: var(--text-tertiary) !important;
+                  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+                }
+              </style>
+
               <div class="runtime-grid">
-                <div class="editor-panel">
+                <div class="editor-panel premium-editor-panel">
                   <div class="editor-toolbar">
                     <div class="editor-toolbar-left">
                       <span class="editor-toolbar-label text-label">Prompt Queue · one per line</span>
@@ -4083,15 +4649,133 @@
                       </button>
                     </div>
                   </div>
-                  <div class="editor-body">
-                    <div class="editor-gutter" id="flow-editorGutter">1</div>
-                    <textarea class="editor-textarea" id="flow-promptEditor" spellcheck="false"
+                  <!-- 🔥 FIX APPLIED HERE: premium-editor-body added for perfect alignment -->
+                  <div class="editor-body premium-editor-body">
+                    <div class="editor-gutter premium-gutter" id="flow-editorGutter">1</div>
+                    <textarea class="editor-textarea premium-textarea" id="flow-promptEditor" spellcheck="false"
                       placeholder="A drone shot flying over misty mountains at sunrise&#10;Close-up of rain falling on a neon-lit street&#10;Time-lapse of clouds rolling over a desert canyon"></textarea>
                   </div>
                 </div>
 
                 <div class="control-panel">
                   <div class="control-card">
+                    <!-- ENGINE CONFIGURATION SECTION -->
+                    <div
+                      style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                      <span class="text-label" style="color:var(--text-primary); font-weight: 600;">Engine
+                        Configuration</span>
+                      <span class="badge-fire badge-new">✨ v1.0.1</span>
+                    </div>
+
+                    <div
+                      style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; background: var(--bg-void); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);">
+
+                      <!-- Account Selector -->
+                      <div class="readout-row" style="margin: 0;">
+                        <span style="display: flex; align-items: center;">Account <span class="badge-fire">🔥
+                            HOT</span></span>
+                        <div class="topbar-item" style="position: relative;">
+                          <button class="btn btn--secondary premium-dropdown-btn"
+                            style="height: 30px; padding: 0 12px; font-size: 12px; display: flex; align-items: center; gap: 6px;"
+                            data-popover-target="pop-flow-account">
+                            <span id="flow-selected-account" style="font-weight: 500; color: #fff;">Default
+                              Profile</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"
+                              stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                              <path d="M6 9l6 6 6-6" />
+                            </svg>
+                          </button>
+                          <div class="popover popover--down" id="pop-flow-account"
+                            style="right: 0; min-width: 200px; z-index: 1000; max-height: 220px; overflow-y: auto;">
+                            <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch Account
+                            </div>
+                            <div id="flow-custom-account-list">
+                              <!-- Populated dynamically by script -->
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Browser Selector -->
+                      <div class="readout-row" style="margin: 0;">
+                        <span style="display: flex; align-items: center;">Browser <span class="badge-fire"
+                            style="background: linear-gradient(135deg, #8A63D6, #C4634F);">🚀 PRO</span></span>
+                        <div class="topbar-item" style="position: relative;">
+                          <button class="btn btn--secondary premium-dropdown-btn"
+                            style="height: 30px; padding: 0 12px; font-size: 12px; display: flex; align-items: center; gap: 6px;"
+                            data-popover-target="pop-flow-browser">
+                            <span id="flow-selected-browser" data-value="chrome"
+                              style="font-weight: 500; color: #fff;">Google Chrome</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"
+                              stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                              <path d="M6 9l6 6 6-6" />
+                            </svg>
+                          </button>
+                          <div class="popover popover--down" id="pop-flow-browser"
+                            style="right: 0; min-width: 190px; z-index: 1001;">
+                            <div class="popover-label text-label" style="color:var(--text-tertiary);">Select Browser
+                            </div>
+                            <button class="popover-item" onclick="setFlowBrowser('Google Chrome', 'chrome', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <circle cx="12" cy="12" r="10" />
+                                <circle cx="12" cy="12" r="4" />
+                                <path d="M21.17 8H12" />
+                                <path d="M3.95 6.06L8.54 14" />
+                                <path d="M10.88 21.94L15.46 14" />
+                              </svg> Chrome
+                            </button>
+                            <button class="popover-item" onclick="setFlowBrowser('Microsoft Edge', 'edge', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#0078D7" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
+                              </svg> Edge
+                            </button>
+                            <button class="popover-item" onclick="setFlowBrowser('Brave', 'brave', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#FF4B2B" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <path d="M12 2l8 5v5c0 5.25-3.5 10-8 12-4.5-2-8-6.75-8-12V7l8-5z" />
+                              </svg> Brave
+                            </button>
+                            <button class="popover-item" onclick="setFlowBrowser('Opera', 'opera', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#FF1B2D" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <circle cx="12" cy="12" r="10" />
+                                <path
+                                  d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10 10 10 0 0 1-10-10 10 10 0 0 1 10-10z" />
+                              </svg> Opera
+                            </button>
+                            <button class="popover-item" onclick="setFlowBrowser('Vivaldi', 'vivaldi', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#EF3939" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                              </svg> Vivaldi
+                            </button>
+                            <button class="popover-item" onclick="setFlowBrowser('Firefox', 'firefox', this)">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#FF9500" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 2a10 10 0 0 0-10 10c0 5.5 4.5 10 10 10s10-4.5 10-10c0-1.5-.3-3-.9-4.3" />
+                              </svg> Firefox
+                            </button>
+                            <div class="popover-divider"></div>
+                            <button class="popover-item" onclick="setFlowBrowser('Tor Browser', 'tor', this)"
+                              style="color: #9c27b0;">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#9c27b0" stroke-width="1.5"
+                                style="width:16px;height:16px;">
+                                <circle cx="12" cy="12" r="10" />
+                                <circle cx="12" cy="12" r="6" />
+                                <circle cx="12" cy="12" r="2" />
+                              </svg> Tor Browser
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="control-divider" style="margin-bottom: 16px;"></div>
+                    <!-- END CONFIGURATION SECTION -->
+
                     <div>
                       <span class="text-label" style="color:var(--text-tertiary);">Runtime Control</span>
                     </div>
@@ -4153,7 +4837,8 @@
                     <div class="control-divider"></div>
 
                     <div class="progress-block">
-                      <div class="progress-labels"><span>Progress</span><span id="flow-progressPercent">0%</span></div>
+                      <div class="progress-labels"><span>Progress</span><span id="flow-progressPercent">0%</span>
+                      </div>
                       <div class="progress-track">
                         <div class="progress-fill" id="flow-progressFill"></div>
                       </div>
@@ -4172,19 +4857,188 @@
                 </div>
               </div>
 
+              <!-- 🌟 NEW: 3D CYBERPUNK CONSOLE SECTION FOR FLOW 🌟 -->
+              <style>
+                /* Flow specific 3D Console Colors (Golden/Orange) */
+                .flow-console-wrapper {
+                  position: relative;
+                  border-radius: var(--radius-md);
+                  padding: 1px;
+                  background: linear-gradient(180deg, rgba(201, 154, 91, 0.2) 0%, rgba(201, 154, 91, 0.02) 100%);
+                  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+                  margin-top: var(--space-2);
+                }
+
+                .flow-console-panel-3d {
+                  background: #030305 !important;
+                  /* Pitch black core */
+                  box-shadow: inset 0 25px 50px rgba(0, 0, 0, 0.9),
+                    inset 0 0 15px rgba(201, 154, 91, 0.15) !important;
+                  border: none !important;
+                  border-radius: calc(var(--radius-md) - 1px) !important;
+                  position: relative;
+                  height: 280px !important;
+                  z-index: 1;
+                }
+
+                /* Golden CRT Scanline Overlay */
+                .flow-console-wrapper::after {
+                  content: "";
+                  position: absolute;
+                  inset: 1px;
+                  border-radius: calc(var(--radius-md) - 1px);
+                  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(201, 154, 91, 0.04) 2px, rgba(201, 154, 91, 0.04) 4px);
+                  pointer-events: none;
+                  z-index: 10;
+                  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+                }
+              </style>
+
               <section class="section">
                 <div class="section-header">
-                  <h2 class="text-subheading"><span class="live-dot"></span>Runtime Console</h2>
+                  <h2 class="text-subheading"><span class="live-dot"
+                      style="background: var(--accent-primary);"></span>Runtime Console</h2>
                   <button class="btn btn--tertiary text-caption" id="flow-clearConsoleBtn">Clear</button>
                 </div>
-                <div class="console-panel" id="flow-consolePanel"></div>
+
+                <div class="flow-console-wrapper">
+                  <div class="console-panel flow-console-panel-3d" id="flow-consolePanel">
+                    <!-- Logs will dynamically inject here -->
+                  </div>
+                </div>
               </section>
             </div>
+
+            <script>
+              function setFlowBrowser(name, value, element) {
+                const displaySpan = document.getElementById('flow-selected-browser');
+                if (displaySpan) {
+                  displaySpan.textContent = name;
+                  displaySpan.dataset.value = value;
+                }
+                const popover = element.closest('.popover');
+                if (popover) popover.classList.remove('open');
+              }
+
+              function updateFlowAccountDropdown() {
+                if (typeof require === 'undefined') return;
+                const { ipcRenderer } = require('electron');
+                ipcRenderer.invoke('get-existing-accounts').then(accounts => {
+                  const listContainer = document.getElementById('flow-custom-account-list');
+                  const displaySpan = document.getElementById('flow-selected-account');
+                  if (!listContainer || !displaySpan) return;
+
+                  const lastAcc = localStorage.getItem('activeRootAccount') || 'Default Profile';
+                  displaySpan.textContent = accounts.includes(lastAcc) ? lastAcc : (accounts.length > 0 ? accounts[0] : 'Default Profile');
+
+                  listContainer.innerHTML = '';
+                  if (accounts.length === 0) {
+                    listContainer.innerHTML = '<p style="padding: 8px 12px; font-size: 12px; color: #777;">No accounts found.</p>';
+                    return;
+                  }
+
+                  accounts.forEach(acc => {
+                    const btn = document.createElement('button');
+                    btn.className = 'popover-item';
+                    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-right:8px; width:16px; height:16px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> ${acc}`;
+                    btn.onclick = function (e) {
+                      e.stopPropagation();
+                      displaySpan.textContent = acc;
+                      localStorage.setItem('activeRootAccount', acc);
+                      this.closest('.popover').classList.remove('open');
+                    };
+                    listContainer.appendChild(btn);
+                  });
+                });
+              }
+
+              document.addEventListener('click', (e) => {
+                if (e.target.closest('[data-popover-target="pop-flow-account"]')) {
+                  updateFlowAccountDropdown();
+                }
+              });
+              setTimeout(updateFlowAccountDropdown, 1000);
+            </script>
 
             <!-- ========================================================================== -->
             <!-- PAGE: AI WORKSPACE                                                         -->
             <!-- ========================================================================== -->
             <div id="page-workspace" class="app-page page-workspace" style="display: none;">
+
+              <!-- ✨ AI Kingdom & 3D Console Styles ✨ -->
+              <style>
+                /* Workspace Specific 3D Console Colors */
+                .workspace-console-wrapper {
+                  position: relative;
+                  border-radius: var(--radius-md);
+                  padding: 1px;
+                  background: linear-gradient(180deg, rgba(201, 154, 91, 0.2) 0%, rgba(201, 154, 91, 0.02) 100%);
+                  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+                  margin-top: var(--space-2);
+                }
+
+                .workspace-console-panel-3d {
+                  background: #030305 !important;
+                  box-shadow: inset 0 25px 50px rgba(0, 0, 0, 0.9),
+                    inset 0 0 15px rgba(201, 154, 91, 0.15) !important;
+                  border: none !important;
+                  border-radius: calc(var(--radius-md) - 1px) !important;
+                  position: relative;
+                  height: 280px !important;
+                  z-index: 1;
+                }
+
+                .workspace-console-wrapper::after {
+                  content: "";
+                  position: absolute;
+                  inset: 1px;
+                  border-radius: calc(var(--radius-md) - 1px);
+                  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(201, 154, 91, 0.04) 2px, rgba(201, 154, 91, 0.04) 4px);
+                  pointer-events: none;
+                  z-index: 10;
+                  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+                }
+
+                /* AI Kingdom Panels (Live Chatter & Final Output) */
+                .ai-kingdom-panel {
+                  background: #050508 !important;
+                  /* Super deep space black */
+                  box-shadow: inset 0 0 25px rgba(255, 255, 255, 0.02), 0 15px 35px rgba(0, 0, 0, 0.4) !important;
+                  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+                  border-radius: var(--radius-lg) !important;
+                  transition: all 0.3s ease;
+                }
+
+                .ai-kingdom-inner-viewer {
+                  background: #020203 !important;
+                  border: 1px solid rgba(255, 255, 255, 0.03) !important;
+                  box-shadow: inset 0 10px 20px rgba(0, 0, 0, 0.6) !important;
+                }
+
+                /* Final Output 3x Warning/Success Glow Alert */
+                @keyframes finalOutputAlert {
+                  0% {
+                    box-shadow: 0 0 0px transparent, inset 0 0 0px transparent;
+                    border-color: rgba(255, 255, 255, 0.06);
+                  }
+
+                  50% {
+                    box-shadow: 0 0 35px rgba(201, 154, 91, 0.6), inset 0 0 20px rgba(201, 154, 91, 0.2);
+                    border-color: var(--accent-primary);
+                  }
+
+                  100% {
+                    box-shadow: 0 0 0px transparent, inset 0 0 0px transparent;
+                    border-color: rgba(255, 255, 255, 0.06);
+                  }
+                }
+
+                .alert-glow-active {
+                  animation: finalOutputAlert 0.8s ease-in-out 3;
+                  /* Pulses exactly 3 times */
+                }
+              </style>
+
               <section class="hero">
                 <div class="ambient-glow"></div>
                 <div class="ambient-glow-secondary"></div>
@@ -4471,7 +5325,8 @@
                             <path d="M6 9l6 6 6-6" />
                           </svg></button>
                         <div class="popover popover--down card-popover" id="pop-prompt">
-                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account</div>
+                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account
+                          </div>
                           <div class="card-account-list"></div>
                         </div>
                       </div>
@@ -4508,7 +5363,8 @@
                             <path d="M6 9l6 6 6-6" />
                           </svg></button>
                         <div class="popover popover--down card-popover" id="pop-chatgpt">
-                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account</div>
+                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account
+                          </div>
                           <div class="card-account-list"></div>
                         </div>
                       </div>
@@ -4545,7 +5401,8 @@
                             <path d="M6 9l6 6 6-6" />
                           </svg></button>
                         <div class="popover popover--down card-popover" id="pop-gemini-workspace">
-                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account</div>
+                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account
+                          </div>
                           <div class="card-account-list"></div>
                         </div>
                       </div>
@@ -4582,7 +5439,8 @@
                             <path d="M6 9l6 6 6-6" />
                           </svg></button>
                         <div class="popover popover--down card-popover" id="pop-claude">
-                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account</div>
+                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account
+                          </div>
                           <div class="card-account-list"></div>
                         </div>
                       </div>
@@ -4619,7 +5477,8 @@
                             <path d="M6 9l6 6 6-6" />
                           </svg></button>
                         <div class="popover popover--down card-popover" id="pop-deepseek">
-                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account</div>
+                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account
+                          </div>
                           <div class="card-account-list"></div>
                         </div>
                       </div>
@@ -4656,7 +5515,8 @@
                             <path d="M6 9l6 6 6-6" />
                           </svg></button>
                         <div class="popover popover--down card-popover" id="pop-qwen">
-                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account</div>
+                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account
+                          </div>
                           <div class="card-account-list"></div>
                         </div>
                       </div>
@@ -4693,7 +5553,8 @@
                             <path d="M6 9l6 6 6-6" />
                           </svg></button>
                         <div class="popover popover--down card-popover" id="pop-perplexity">
-                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account</div>
+                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account
+                          </div>
                           <div class="card-account-list"></div>
                         </div>
                       </div>
@@ -4730,7 +5591,8 @@
                             <path d="M6 9l6 6 6-6" />
                           </svg></button>
                         <div class="popover popover--down card-popover" id="pop-grok">
-                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account</div>
+                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account
+                          </div>
                           <div class="card-account-list"></div>
                         </div>
                       </div>
@@ -4774,7 +5636,8 @@
                             <path d="M6 9l6 6 6-6" />
                           </svg></button>
                         <div class="popover popover--down card-popover" id="pop-final">
-                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account</div>
+                          <div class="popover-label text-label" style="color:var(--text-tertiary);">Switch account
+                          </div>
                           <div class="card-account-list"></div>
                         </div>
                       </div>
@@ -4789,7 +5652,6 @@
                 </div>
               </section>
 
-              <!-- 🔴 Premium Composer Box (Moved UP) -->
               <style>
                 @keyframes premiumPulseGlow {
                   0% {
@@ -4918,100 +5780,40 @@
                 </div>
               </div>
 
-              <!-- System Overview (Moved Down) -->
-              <section class="section">
-                <div class="section-header">
-                  <h2 class="text-subheading">System Overview</h2>
-                </div>
-                <div class="stats-grid">
-                  <div class="stat-card material-react whisper tilt">
-                    <div class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="5" cy="6" r="2" />
-                        <circle cx="19" cy="18" r="2" />
-                        <path d="M7 6h6a4 4 0 0 1 4 4v2a4 4 0 0 0 4 4" />
-                      </svg></div>
-                    <div class="stat-value text-display"><span data-count-to="3">0</span><span
-                        class="stat-suffix">/5</span></div>
-                    <div class="stat-label">Workflow Stage</div>
-                    <div class="stat-delta neutral">Autumn Campaign Rollout</div>
-                  </div>
-                  <div class="stat-card material-react whisper tilt">
-                    <div class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="5" r="2" />
-                        <circle cx="5" cy="19" r="2" />
-                        <circle cx="19" cy="19" r="2" />
-                        <path d="M12 7v5M12 12l-5.5 5M12 12l5.5 5" />
-                      </svg></div>
-                    <div class="stat-value text-display"><span data-count-to="5">0</span></div>
-                    <div class="stat-label">Workers Collaborating</div>
-                    <div class="mini-stack">
-                      <span style="background:var(--ai-chatgpt);">GPT</span>
-                      <span style="background:var(--ai-gemini);">GEM</span>
-                      <span style="background:var(--ai-claude);">CLD</span>
-                      <span style="background:var(--ai-deepseek);">DSK</span>
-                      <span style="background:var(--ai-perplexity);">PPX</span>
-                    </div>
-                  </div>
-                  <div class="stat-card material-react whisper tilt">
-                    <div class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 12h4l2-7 4 14 2-7h6" />
-                      </svg></div>
-                    <div class="stat-value text-display"><span data-count-to="99">0</span><span
-                        class="stat-suffix">%</span></div>
-                    <div class="stat-label">System Health</div>
-                    <div class="stat-delta positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 12l5-5 4 4 6-6" />
-                        <path d="M15 5h5v5" />
-                      </svg>All systems nominal</div>
-                  </div>
-                  <div class="stat-card material-react whisper tilt">
-                    <div class="icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 20V10" />
-                        <path d="M10 20V4" />
-                        <path d="M16 20v-7" />
-                        <path d="M20 20H4" />
-                      </svg></div>
-                    <div class="stat-value text-display"><span data-count-to="412">0</span></div>
-                    <div class="stat-label">Reports Completed Today</div>
-                    <div class="stat-delta positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 12l5-5 4 4 6-6" />
-                        <path d="M15 5h5v5" />
-                      </svg>+38 vs yesterday</div>
-                  </div>
-                </div>
-              </section>
-
-              <!-- System Core Console -->
+              <!-- 🌟 3D System Core Console 🌟 -->
               <section class="section" style="margin-bottom: var(--space-6);">
-                <div class="section-header">
-                  <h2 class="text-subheading"><span class="live-dot"></span>System Core Console</h2>
+                <div class="section-header"
+                  style="margin-bottom: var(--space-4); display: flex; justify-content: space-between; align-items: center;">
+                  <h2 class="text-subheading" style="display: flex; align-items: center; margin: 0;"><span
+                      class="live-dot" style="margin-right: 8px;"></span>System Core Console</h2>
                   <button class="btn btn--tertiary text-caption" id="workspace-clearConsoleBtn">Clear</button>
                 </div>
-                <div class="console-panel" id="workspace-consolePanel"></div>
+                <div class="workspace-console-wrapper">
+                  <div class="console-panel workspace-console-panel-3d" id="workspace-consolePanel"></div>
+                </div>
               </section>
 
-              <!-- Final Output Section -->
+              <!-- 🌟 Premium AI Kingdom Sections (Live Chatter & Final Output) 🌟 -->
               <section class="section" id="finalOutputSection" style="margin-bottom: 0;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); align-items: stretch;">
 
                   <div style="display: flex; flex-direction: column;">
-                    <div class="section-header" style="margin-bottom: var(--space-4); align-items: center;">
-                      <h2 class="text-subheading" style="display: flex; align-items: center; gap: 8px; margin: 0;">
-                        <span class="live-dot" style="margin: 0; flex-shrink: 0;"></span> Live AI Chatter
-                      </h2>
-                      <span class="text-caption" style="color:var(--text-tertiary);">Real-time Agent Comms</span>
+                    <div class="section-header"
+                      style="margin-bottom: var(--space-4); align-items: center; justify-content: space-between; display: flex;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <h2 class="text-subheading" style="margin: 0; display: flex; align-items: center;">
+                          <span class="live-dot" style="margin: 0; margin-right: 8px; flex-shrink: 0;"></span> Live AI
+                          Chatter
+                        </h2>
+                        <span class="text-caption" style="color:var(--text-tertiary);">Real-time Agent Comms</span>
+                      </div>
+                      <button class="btn btn--tertiary text-caption" id="clearChatterBtn">Clear</button>
                     </div>
 
-                    <div class="final-output-panel"
+                    <div class="ai-kingdom-panel"
                       style="flex: 1; display: flex; flex-direction: column; padding: var(--space-4);">
-                      <div id="liveChatterViewer"
-                        style="flex: 1; background: var(--bg-void); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); overflow-y: auto; height: 340px; display: flex; flex-direction: column; gap: 12px;">
+                      <div id="liveChatterViewer" class="ai-kingdom-inner-viewer"
+                        style="flex: 1; border-radius: var(--radius-md); padding: var(--space-4); overflow-y: auto; height: 340px; display: flex; flex-direction: column; gap: 12px;">
                         <div class="final-output-placeholder" id="liveChatPlaceholder"
                           style="margin: auto; text-align: center;">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
@@ -5027,38 +5829,47 @@
                   </div>
 
                   <div style="display: flex; flex-direction: column;">
-                    <div class="section-header" style="margin-bottom: var(--space-4);">
-                      <h2 class="text-subheading">Final Output</h2>
-                      <span class="text-caption" id="finalOutputCaption" style="color:var(--text-tertiary);">Awaiting
-                        first report</span>
+                    <div class="section-header"
+                      style="margin-bottom: var(--space-4); align-items: center; justify-content: space-between; display: flex;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <h2 class="text-subheading" style="margin: 0;">Final Output</h2>
+                        <span class="text-caption" id="finalOutputCaption" style="color:var(--text-tertiary);">Awaiting
+                          first report</span>
+                      </div>
+                      <button class="btn btn--tertiary text-caption" id="clearFinalOutputBtn">Clear</button>
                     </div>
-                    <div class="final-output-panel"
+
+                    <div class="ai-kingdom-panel" id="finalOutputPanelOuter"
                       style="flex: 1; display: flex; flex-direction: column; padding: var(--space-4);">
                       <div class="final-output-meta"
-                        style="grid-template-columns: repeat(2, 1fr); gap: var(--space-3); padding-bottom: var(--space-3); margin-bottom: var(--space-3);">
+                        style="grid-template-columns: repeat(2, 1fr); gap: var(--space-3); padding-bottom: var(--space-3); margin-bottom: var(--space-3); border-bottom: 1px solid rgba(255,255,255,0.05);">
                         <div class="final-output-meta-item">
-                          <span class="text-label">Status</span>
+                          <span class="text-label" style="color:var(--text-tertiary);">Status</span>
                           <span class="status-pill idle" id="foStatusPill">Awaiting Report</span>
                         </div>
                         <div class="final-output-meta-item">
-                          <span class="text-label">Source</span>
-                          <span class="text-body-emphasis" id="foGeneratedBy">—</span>
+                          <span class="text-label" style="color:var(--text-tertiary);">Source</span>
+                          <span class="text-body-emphasis" id="foGeneratedBy" style="color:#fff;">—</span>
                         </div>
                       </div>
-                      <div class="final-output-viewer" id="finalOutputViewer"
-                        style="flex: 1; margin-bottom: var(--space-4); min-height: 220px; padding: var(--space-4);">
-                        <div class="final-output-placeholder" id="finalOutputPlaceholder">
+                      <div class="ai-kingdom-inner-viewer" id="finalOutputViewer"
+                        style="flex: 1; margin-bottom: var(--space-4); border-radius: var(--radius-md); min-height: 220px; padding: var(--space-4);">
+                        <div class="final-output-placeholder" id="finalOutputPlaceholder"
+                          style="margin: auto; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                            stroke-linecap="round" stroke-linejoin="round">
+                            stroke-linecap="round" stroke-linejoin="round"
+                            style="width: 32px; height: 32px; margin: 0 auto 10px; color: var(--text-disabled);">
                             <path d="M8 2.5h6l4.5 4.5V21a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z" />
                             <path d="M14 2.5V7h4.5" />
                             <path d="M9.5 12.5h5M9.5 15.5h5M9.5 9.5h2" />
                           </svg>
-                          <p class="text-body">Your completed report will appear here after QA.</p>
+                          <p class="text-body" style="color: var(--text-tertiary); text-align: center;">Your completed
+                            report will appear here after QA.</p>
                         </div>
                       </div>
                       <div class="final-output-actions">
-                        <button class="btn btn--secondary" id="foCopyBtn" disabled>
+                        <button class="btn btn--secondary" id="foCopyBtn" disabled
+                          style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1);">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
                             stroke-linecap="round" stroke-linejoin="round">
                             <rect x="9" y="9" width="11" height="11" rx="2" />
@@ -5073,317 +5884,416 @@
                 </div>
               </section>
 
+              <!-- Inline Logic for Clear Buttons and Animation -->
+              <script>
+                // Core Console Clear
+                document.getElementById('workspace-clearConsoleBtn')?.addEventListener('click', () => {
+                  const panel = document.getElementById('workspace-consolePanel');
+                  if (panel) panel.innerHTML = '';
+                });
+
+                // Live Chatter Clear
+                document.getElementById('clearChatterBtn')?.addEventListener('click', () => {
+                  const viewer = document.getElementById('liveChatterViewer');
+                  if (viewer) {
+                    viewer.innerHTML = `
+                            <div class="final-output-placeholder" id="liveChatPlaceholder" style="margin: auto; text-align: center;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; margin: 0 auto 10px; color: var(--text-disabled);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                                <p class="text-body" style="color: var(--text-tertiary);">Awaiting internal agent communications...</p>
+                            </div>`;
+                  }
+                });
+
+                // Final Output Clear
+                document.getElementById('clearFinalOutputBtn')?.addEventListener('click', () => {
+                  const viewer = document.getElementById('finalOutputViewer');
+                  if (viewer) {
+                    viewer.innerHTML = `
+                            <div class="final-output-placeholder" id="finalOutputPlaceholder" style="margin: auto; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px; margin: 0 auto 10px; color: var(--text-disabled);"><path d="M8 2.5h6l4.5 4.5V21a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z" /><path d="M14 2.5V7h4.5" /><path d="M9.5 12.5h5M9.5 15.5h5M9.5 9.5h2" /></svg>
+                                <p class="text-body" style="color: var(--text-tertiary); text-align: center;">Your completed report will appear here after QA.</p>
+                            </div>`;
+                  }
+                  const status = document.getElementById('foStatusPill');
+                  if (status) { status.textContent = 'Awaiting Report'; status.className = 'status-pill idle'; }
+                  const genBy = document.getElementById('foGeneratedBy');
+                  if (genBy) genBy.textContent = '—';
+                  const btn = document.getElementById('foCopyBtn');
+                  if (btn) btn.disabled = true;
+                });
+
+                // MutationObserver to trigger 3x Warning/Success Glow when new Final Output arrives
+                setTimeout(() => {
+                  const targetNode = document.getElementById('finalOutputViewer');
+                  const panelToGlow = document.getElementById('finalOutputPanelOuter');
+                  if (targetNode && panelToGlow) {
+                    const observer = new MutationObserver((mutationsList) => {
+                      for (let mutation of mutationsList) {
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                          if (!targetNode.querySelector('#finalOutputPlaceholder')) {
+                            panelToGlow.classList.remove('alert-glow-active');
+                            void panelToGlow.offsetWidth; // Force DOM reflow to restart animation
+                            panelToGlow.classList.add('alert-glow-active');
+                          }
+                        }
+                      }
+                    });
+                    observer.observe(targetNode, { childList: true });
+                  }
+                }, 1000); // Slight delay to ensure DOM is fully ready
+              </script>
+
             </div> <!-- Closes #page-workspace -->
-          </div> <!-- Closes .content-inner -->
-        </main> <!-- Closes .content -->
-      </div> <!-- Closes .main -->
-    </div> <!-- Closes .app-body -->
-  </div> <!-- Closes .app -->
 
-  <!-- ========================================== -->
-  <!-- MODALS (UPDATED & ADVANCED)                -->
-  <!-- ========================================== -->
+            <!-- ========================================== -->
+            <!-- MODALS (UPDATED & ADVANCED)                -->
+            <!-- ========================================== -->
 
-  <!-- 1. Add Account Modal -->
-  <div id="addAccountModal"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-    <div style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 360px;">
-      <h3 style="margin-top: 0; color: #fff; font-family: sans-serif; font-weight: 500;">Add New Account</h3>
-      <p style="color: #a0a0a0; font-size: 14px; margin-bottom: 20px; font-family: sans-serif;">Enter an email to create
-        a new profile.</p>
-      <input type="text" id="newAccountInput" placeholder="e.g., workspace@studio.io" autocomplete="off"
-        style="width: 100%; padding: 12px; background: #141418; border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 20px; box-sizing: border-box; font-size: 14px; outline: none;" />
-      <div style="display: flex; justify-content: flex-end; gap: 12px; font-family: sans-serif;">
-        <button id="cancelAccountBtn"
-          style="background: transparent; color: #a0a0a0; border: 1px solid #444; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancel</button>
-        <button id="saveAccountBtn"
-          style="background: #2563eb; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Create
-          & Login</button>
-      </div>
-    </div>
-  </div>
+            <!-- 1. Add Account Modal -->
+            <div id="addAccountModal"
+              style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+              <div
+                style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 360px;">
+                <h3 style="margin-top: 0; color: #fff; font-family: sans-serif; font-weight: 500;">Add New Account
+                </h3>
+                <p style="color: #a0a0a0; font-size: 14px; margin-bottom: 20px; font-family: sans-serif;">Enter an
+                  email
+                  to create
+                  a new profile.</p>
+                <input type="text" id="newAccountInput" placeholder="e.g., workspace@studio.io" autocomplete="off"
+                  style="width: 100%; padding: 12px; background: #141418; border: 1px solid #444; color: #fff; border-radius: 8px; margin-bottom: 20px; box-sizing: border-box; font-size: 14px; outline: none;" />
+                <div style="display: flex; justify-content: flex-end; gap: 12px; font-family: sans-serif;">
+                  <button id="cancelAccountBtn"
+                    style="background: transparent; color: #a0a0a0; border: 1px solid #444; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancel</button>
+                  <button id="saveAccountBtn"
+                    style="background: #2563eb; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Create
+                    & Login</button>
+                </div>
+              </div>
+            </div>
 
-  <!-- 2. Sign Out / Delete Account Modal (NEW) -->
-  <div id="accountManagerModal"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-    <div
-      style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 400px; color: #fff; font-family: sans-serif;">
-      <h3
-        style="margin-top: 0; font-weight: 500; border-bottom: 1px solid #444; padding-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-          <path d="M16 17l5-5-5-5" />
-          <path d="M21 12H9" />
-        </svg>
-        Manage Accounts
-      </h3>
-      <p style="color: #e57373; font-size: 13px; margin: 15px 0;">Warning: Deleting an account will permanently remove
-        its browser data and active sessions.</p>
+            <!-- 2. Sign Out / Delete Account Modal (NEW) -->
+            <div id="accountManagerModal"
+              style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+              <div
+                style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 400px; color: #fff; font-family: sans-serif;">
+                <h3
+                  style="margin-top: 0; font-weight: 500; border-bottom: 1px solid #444; padding-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <path d="M16 17l5-5-5-5" />
+                    <path d="M21 12H9" />
+                  </svg>
+                  Manage Accounts
+                </h3>
+                <p style="color: #e57373; font-size: 13px; margin: 15px 0;">Warning: Deleting an account will
+                  permanently remove
+                  its browser data and active sessions.</p>
 
-      <div id="deleteAccountList"
-        style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
-        <!-- Accounts will be populated here -->
-      </div>
+                <div id="deleteAccountList"
+                  style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+                  <!-- Accounts will be populated here -->
+                </div>
 
-      <div style="display: flex; justify-content: flex-end;">
-        <button onclick="document.getElementById('accountManagerModal').style.display='none'"
-          style="background: #333; color: #fff; border: 1px solid #555; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
-      </div>
-    </div>
-  </div>
+                <div style="display: flex; justify-content: flex-end;">
+                  <button onclick="document.getElementById('accountManagerModal').style.display='none'"
+                    style="background: #333; color: #fff; border: 1px solid #555; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+                </div>
+              </div>
+            </div>
 
-  <!-- 3. Help / Documentation Modal (ADVANCED) -->
-  <div id="helpModal"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-    <div
-      style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 600px; color: #fff; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-      <h3
-        style="margin-top: 0; font-weight: 600; border-bottom: 1px solid #444; padding-bottom: 12px; font-size: 18px; display: flex; align-items: center; justify-content: space-between;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--accent-primary)" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4" />
-            <path d="M12 8h.01" />
-          </svg>
-          System Documentation & Guide
-        </div>
-      </h3>
+            <!-- 3. Help / Documentation Modal (ADVANCED) -->
+            <div id="helpModal"
+              style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+              <div
+                style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 600px; color: #fff; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <h3
+                  style="margin-top: 0; font-weight: 600; border-bottom: 1px solid #444; padding-bottom: 12px; font-size: 18px; display: flex; align-items: center; justify-content: space-between;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--accent-primary)"
+                      stroke-width="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 16v-4" />
+                      <path d="M12 8h.01" />
+                    </svg>
+                    System Documentation & Guide
+                  </div>
+                </h3>
 
-      <div
-        style="max-height: 450px; overflow-y: auto; padding-right: 15px; margin-top: 15px; font-size: 13px; color: #b0b0b0; line-height: 1.6;">
+                <div
+                  style="max-height: 450px; overflow-y: auto; padding-right: 15px; margin-top: 15px; font-size: 13px; color: #b0b0b0; line-height: 1.6;">
 
-        <!-- Developer Info & WhatsApp Link -->
-        <div
-          style="background: rgba(201,154,91,0.05); border: 1px solid rgba(201,154,91,0.2); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <h4 style="color: var(--accent-primary); margin: 0 0 5px 0; font-size: 15px;">Creator Engine Pro v1.0</h4>
-            <p style="margin: 0 0 4px 0; color: #fff;"><strong>Developer:</strong> Atawur Rahman</p>
-            <p style="margin: 0; font-size: 12px;">Built for automated multi-agent workflows.</p>
-          </div>
-          <a href="https://wa.me/8801950265366" target="_blank"
-            style="background: #25D366; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: 0.2s;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path
-                d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.305-.88-.653-1.473-1.46-1.646-1.757-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
-            </svg>
-            Feedback / Updates
-          </a>
-        </div>
+                  <!-- Developer Info & WhatsApp Link -->
+                  <div
+                    style="background: rgba(201,154,91,0.05); border: 1px solid rgba(201,154,91,0.2); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <h4 style="color: var(--accent-primary); margin: 0 0 5px 0; font-size: 15px;">Creator Engine Pro
+                        v1.0</h4>
+                      <p style="margin: 0 0 4px 0; color: #fff;"><strong>Developer:</strong> Atawur Rahman</p>
+                      <p style="margin: 0; font-size: 12px;">Built for automated multi-agent workflows.</p>
+                    </div>
+                    <a href="https://wa.me/8801950265366" target="_blank"
+                      style="background: #25D366; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: 0.2s;">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path
+                          d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.305-.88-.653-1.473-1.46-1.646-1.757-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
+                      </svg>
+                      Feedback / Updates
+                    </a>
+                  </div>
 
-        <!-- How it works -->
-        <h4 style="color: #fff; margin-bottom: 8px; font-size: 14px;">🏗️ AI Roles & Architecture</h4>
-        <p style="margin-bottom: 12px;">This application uses a strict <b>Tag Routing System</b>. The AIs have specific
-          rules on who they can communicate with:</p>
-        <ul style="padding-left: 20px; margin-top: 0; margin-bottom: 15px;">
-          <li><b style="color: #ffb74d;">@administrator</b>: The orchestrator. It manages tasks, decides which worker to
-            use, and sends the final output to the Editor.</li>
-          <li><b style="color: #64b5f6;">Worker AIs (@chatgpt, @gemini, etc)</b>: They do the hard work. They can ONLY
-            communicate back to the <code>@administrator</code>.</li>
-          <li><b style="color: #e91e63;">@final</b>: The Editor. It reviews the Administrator's compiled data, formats
-            it perfectly, and outputs it to you.</li>
-        </ul>
+                  <!-- How it works -->
+                  <h4 style="color: #fff; margin-bottom: 8px; font-size: 14px;">🏗️ AI Roles & Architecture</h4>
+                  <p style="margin-bottom: 12px;">This application uses a strict <b>Tag Routing System</b>. The AIs
+                    have
+                    specific
+                    rules on who they can communicate with:</p>
+                  <ul style="padding-left: 20px; margin-top: 0; margin-bottom: 15px;">
+                    <li><b style="color: #ffb74d;">@administrator</b>: The orchestrator. It manages tasks, decides
+                      which
+                      worker to
+                      use, and sends the final output to the Editor.</li>
+                    <li><b style="color: #64b5f6;">Worker AIs (@chatgpt, @gemini, etc)</b>: They do the hard work.
+                      They
+                      can ONLY
+                      communicate back to the <code>@administrator</code>.</li>
+                    <li><b style="color: #e91e63;">@final</b>: The Editor. It reviews the Administrator's compiled
+                      data,
+                      formats
+                      it perfectly, and outputs it to you.</li>
+                  </ul>
 
-        <!-- System Recording -->
-        <h4 style="color: #e57373; margin-bottom: 8px; font-size: 14px;">🎙️ "System Recording" Switch</h4>
-        <p style="margin-bottom: 8px;">To prevent AIs from talking to each other automatically before they know their
-          jobs, use this switch:</p>
-        <ul style="padding-left: 20px; margin-top: 0; margin-bottom: 15px;">
-          <li style="margin-bottom: 6px;"><strong>🔴 OFF (Warm-up Mode):</strong> The Master Router pauses. Your
-            messages are sent directly to the selected AI, but their responses are <b>ignored</b> by the system. Use
-            this to train them!</li>
-          <li><strong>🟢 ON (Active Routing):</strong> The loop starts. If an AI uses a tag (e.g.,
-            <code>@chatgpt</code>), the message is instantly routed to that AI's inbox automatically.
-          </li>
-        </ul>
+                  <!-- System Recording -->
+                  <h4 style="color: #e57373; margin-bottom: 8px; font-size: 14px;">🎙️ "System Recording" Switch</h4>
+                  <p style="margin-bottom: 8px;">To prevent AIs from talking to each other automatically before they
+                    know their
+                    jobs, use this switch:</p>
+                  <ul style="padding-left: 20px; margin-top: 0; margin-bottom: 15px;">
+                    <li style="margin-bottom: 6px;"><strong>🔴 OFF (Warm-up Mode):</strong> The Master Router pauses.
+                      Your
+                      messages are sent directly to the selected AI, but their responses are <b>ignored</b> by the
+                      system. Use
+                      this to train them!</li>
+                    <li><strong>🟢 ON (Active Routing):</strong> The loop starts. If an AI uses a tag (e.g.,
+                      <code>@chatgpt</code>), the message is instantly routed to that AI's inbox automatically.
+                    </li>
+                  </ul>
 
-        <!-- Training Guide -->
-        <h4 style="color: #4CAF50; margin-bottom: 8px; font-size: 14px;">🧠 How to Train Your AIs (Step-by-Step)</h4>
-        <div
-          style="background: #141418; padding: 12px; border-radius: 6px; border: 1px left solid #4CAF50; margin-bottom: 12px;">
-          <ol style="padding-left: 20px; margin: 0; color: #d0d0d0;">
-            <li style="margin-bottom: 8px;">Turn <b>System Recording OFF</b>.</li>
-            <li style="margin-bottom: 8px;">Select <b>Administrator</b> and send its master prompt (e.g., "Act as the
-              Master Orchestrator..."). Wait for it to confirm.</li>
-            <li style="margin-bottom: 8px;">Select <b>Final</b> and send its formatting rules (e.g., "Act as the Editor.
-              Always end with @admin..."). Wait for it to confirm.</li>
-            <li>Turn <b>System Recording ON</b>. Now give your actual task to the Administrator!</li>
-          </ol>
-        </div>
-      </div>
+                  <!-- Training Guide -->
+                  <h4 style="color: #4CAF50; margin-bottom: 8px; font-size: 14px;">🧠 How to Train Your AIs
+                    (Step-by-Step)</h4>
+                  <div
+                    style="background: #141418; padding: 12px; border-radius: 6px; border: 1px left solid #4CAF50; margin-bottom: 12px;">
+                    <ol style="padding-left: 20px; margin: 0; color: #d0d0d0;">
+                      <li style="margin-bottom: 8px;">Turn <b>System Recording OFF</b>.</li>
+                      <li style="margin-bottom: 8px;">Select <b>Administrator</b> and send its master prompt (e.g.,
+                        "Act
+                        as the
+                        Master Orchestrator..."). Wait for it to confirm.</li>
+                      <li style="margin-bottom: 8px;">Select <b>Final</b> and send its formatting rules (e.g., "Act as
+                        the Editor.
+                        Always end with @admin..."). Wait for it to confirm.</li>
+                      <li>Turn <b>System Recording ON</b>. Now give your actual task to the Administrator!</li>
+                    </ol>
+                  </div>
+                </div>
 
-      <div
-        style="display: flex; justify-content: flex-end; margin-top: 15px; border-top: 1px solid #444; padding-top: 15px;">
-        <button onclick="document.getElementById('helpModal').style.display='none'"
-          style="background: #333; color: #fff; border: 1px solid #555; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">Understood</button>
-      </div>
-    </div>
-  </div>
+                <div
+                  style="display: flex; justify-content: flex-end; margin-top: 15px; border-top: 1px solid #444; padding-top: 15px;">
+                  <button onclick="document.getElementById('helpModal').style.display='none'"
+                    style="background: #333; color: #fff; border: 1px solid #555; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">Understood</button>
+                </div>
+              </div>
+            </div>
 
-  <!-- 4. Settings Modal (With Check Update) -->
-  <div id="settingsModal"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-    <div
-      style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 400px; color: #fff; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-      <h3
-        style="margin-top: 0; font-weight: 600; border-bottom: 1px solid #444; padding-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3" />
-          <path
-            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
-        System Settings
-      </h3>
+            <!-- 4. Settings Modal (With Check Update & Version History) -->
+            <div id="settingsModal"
+              style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+              <div
+                style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 420px; color: #fff; font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <h3
+                  style="margin-top: 0; font-weight: 600; border-bottom: 1px solid #444; padding-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                  System Settings
+                </h3>
 
-      <div style="margin: 24px 0;">
-        <div
-          style="display: flex; justify-content: space-between; align-items: center; background: #141418; padding: 16px; border-radius: 8px; border: 1px solid #333;">
-          <div style="flex: 1;">
-            <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 500;">Software Update</h4>
-            <span id="updateStatusText" style="font-size: 12px; color: var(--text-tertiary); display: block;">Current
-              Version: v1.0.0</span>
-          </div>
-          <button id="btnCheckUpdate" class="btn btn--primary"
-            style="height: 32px; padding: 0 12px; font-size: 12px; flex-shrink: 0;">Check</button>
-        </div>
-      </div>
+                <div style="margin: 24px 0;">
+                  <!-- 🌟 Update Container 🌟 -->
+                  <div style="background: #141418; border-radius: 8px; border: 1px solid #333; overflow: hidden;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px;">
+                      <div style="flex: 1;">
+                        <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 500;">Software Update</h4>
+                        <span id="updateStatusText"
+                          style="font-size: 12px; color: var(--text-tertiary); display: block;">Current Version:
+                          v1.0.0</span>
+                      </div>
+                      <div style="display: flex; gap: 8px;">
+                        <!-- 🔴 New Versions Button -->
+                        <button id="btnVersionHistory"
+                          style="background: rgba(255, 255, 255, 0.05); border: 1px solid #444; color: #ccc; height: 32px; padding: 0 12px; font-size: 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;"
+                          onmouseover="this.style.color='#fff'; this.style.borderColor='#888';"
+                          onmouseout="this.style.color='#ccc'; this.style.borderColor='#444';">
+                          Versions
+                        </button>
+                        <!-- Original Check Button -->
+                        <button id="btnCheckUpdate" class="btn btn--primary"
+                          style="height: 32px; padding: 0 12px; font-size: 12px; flex-shrink: 0;">Check</button>
+                      </div>
+                    </div>
 
-      <div style="display: flex; justify-content: flex-end;">
-        <button onclick="document.getElementById('settingsModal').style.display='none'"
-          style="background: transparent; color: #a0a0a0; border: 1px solid #444; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
-      </div>
-    </div>
-  </div>
+                    <!-- 🔴 Hidden Panel for GitHub Releases -->
+                    <div id="versionHistoryPanel"
+                      style="display: none; border-top: 1px solid #333; background: #0a0a0c; max-height: 220px; overflow-y: auto;">
+                      <div id="versionListContent"
+                        style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                        <!-- List will be injected here via JS -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-  <!-- 5. Notification Modal -->
-  <div id="notificationModal"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-    <div
-      style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 350px; color: #fff; font-family: sans-serif;">
-      <h3 style="margin-top: 0; font-weight: 500; border-bottom: 1px solid #444; padding-bottom: 10px;">🔔 Notifications
-      </h3>
-      <div style="background: #141418; padding: 12px; border-radius: 8px; border: 1px solid #444; margin-top: 15px;">
-        <strong style="color: #C99A5B; font-size: 14px;">🎉 Welcome!</strong>
-        <p style="color: #a0a0a0; font-size: 13px; margin: 5px 0 0 0;">Creator Engine Pro is fully initialized and ready
-          to use!</p>
-      </div>
-      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
-        <button onclick="document.getElementById('notificationModal').style.display='none'"
-          style="background: #333; color: #fff; border: 1px solid #555; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
-      </div>
-    </div>
-  </div>
-  <!-- ========================================== -->
-  <!-- CORE UI SCRIPTS (External)                 -->
-  <!-- ========================================== -->
-  <!-- CINEMATIC BOOT SEQUENCE JS -->
-  <script>
-    (function () {
-      var boot = document.getElementById('bootSequence');
-      if (!boot) return;
+                <div style="display: flex; justify-content: flex-end;">
+                  <button onclick="document.getElementById('settingsModal').style.display='none'"
+                    style="background: transparent; color: #a0a0a0; border: 1px solid #444; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+                </div>
+              </div>
+            </div>
 
-      var alreadyBooted = false;
-      try { alreadyBooted = sessionStorage.getItem('cepBooted') === '1'; } catch (e) { }
-      if (alreadyBooted) { boot.remove(); return; }
+            <!-- 5. Notification Modal -->
+            <div id="notificationModal"
+              style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+              <div
+                style="background: #1e1e24; padding: 24px; border-radius: 12px; border: 1px solid #333; width: 350px; color: #fff; font-family: sans-serif;">
+                <h3 style="margin-top: 0; font-weight: 500; border-bottom: 1px solid #444; padding-bottom: 10px;">🔔
+                  Notifications</h3>
+                <div
+                  style="background: #141418; padding: 12px; border-radius: 8px; border: 1px solid #444; margin-top: 15px;">
+                  <strong style="color: #C99A5B; font-size: 14px;">🎉 Welcome!</strong>
+                  <p style="color: #a0a0a0; font-size: 13px; margin: 5px 0 0 0;">Creator Engine Pro is fully initialized
+                    and ready to use!</p>
+                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                  <button onclick="document.getElementById('notificationModal').style.display='none'"
+                    style="background: #333; color: #fff; border: 1px solid #555; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+                </div>
+              </div>
+            </div>
+            <!-- ========================================== -->
+            <!-- CORE UI SCRIPTS (External)                 -->
+            <!-- ========================================== -->
+            <!-- CINEMATIC BOOT SEQUENCE JS -->
+            <script>
+              (function () {
+                var boot = document.getElementById('bootSequence');
+                if (!boot) return;
 
-      var reduced = false;
-      try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { }
+                var alreadyBooted = false;
+                try { alreadyBooted = sessionStorage.getItem('cepBooted') === '1'; } catch (e) { }
+                if (alreadyBooted) { boot.remove(); return; }
 
-      var logEl = document.getElementById('bootLog');
-      var fillEl = document.getElementById('bootProgressFill');
-      var pctEl = document.getElementById('bootPercent');
-      var statusEl = document.getElementById('bootStatus');
-      var sysDots = boot.querySelectorAll('.boot-sys-dot');
-      var particleField = document.getElementById('bootParticles');
+                var reduced = false;
+                try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { }
 
-      var logs = [
-        'Initializing neural core',
-        'Loading creative modules',
-        'Connecting AI systems',
-        'Calibrating workflows',
-        'Systems online'
-      ];
+                var logEl = document.getElementById('bootLog');
+                var fillEl = document.getElementById('bootProgressFill');
+                var pctEl = document.getElementById('bootPercent');
+                var statusEl = document.getElementById('bootStatus');
+                var sysDots = boot.querySelectorAll('.boot-sys-dot');
+                var particleField = document.getElementById('bootParticles');
 
-      if (!reduced) {
-        var count = 46;
-        var frag = document.createDocumentFragment();
-        for (var i = 0; i < count; i++) {
-          var p = document.createElement('span');
-          p.className = 'boot-particle';
-          p.style.left = (Math.random() * 100) + '%';
-          p.style.top = (55 + Math.random() * 45) + '%';
-          p.style.setProperty('--size', (1 + Math.random() * 1.8).toFixed(1) + 'px');
-          p.style.setProperty('--dur', (7 + Math.random() * 9).toFixed(2) + 's');
-          p.style.setProperty('--delay', (Math.random() * 8).toFixed(2) + 's');
-          p.style.setProperty('--drift', (Math.random() * 24 - 12).toFixed(0) + 'px');
-          frag.appendChild(p);
-        }
-        particleField.appendChild(frag);
-      }
+                var logs = [
+                  'Initializing neural core',
+                  'Loading creative modules',
+                  'Connecting AI systems',
+                  'Calibrating workflows',
+                  'Systems online'
+                ];
 
-      var finished = false;
-      function finishBoot() {
-        if (finished) return;
-        finished = true;
-        try { sessionStorage.setItem('cepBooted', '1'); } catch (e) { }
-        boot.classList.add('boot-sequence--exit');
-        setTimeout(function () {
-          if (boot && boot.parentNode) boot.remove();
-        }, 1000);
-      }
+                if (!reduced) {
+                  var count = 46;
+                  var frag = document.createDocumentFragment();
+                  for (var i = 0; i < count; i++) {
+                    var p = document.createElement('span');
+                    p.className = 'boot-particle';
+                    p.style.left = (Math.random() * 100) + '%';
+                    p.style.top = (55 + Math.random() * 45) + '%';
+                    p.style.setProperty('--size', (1 + Math.random() * 1.8).toFixed(1) + 'px');
+                    p.style.setProperty('--dur', (7 + Math.random() * 9).toFixed(2) + 's');
+                    p.style.setProperty('--delay', (Math.random() * 8).toFixed(2) + 's');
+                    p.style.setProperty('--drift', (Math.random() * 24 - 12).toFixed(0) + 'px');
+                    frag.appendChild(p);
+                  }
+                  particleField.appendChild(frag);
+                }
 
-      var step = -1;
-      function setStep(index) {
-        if (index === step) return;
-        step = index;
-        logEl.textContent = logs[step];
-        logEl.classList.remove('boot-log--flicker');
-        void logEl.offsetWidth;
-        logEl.classList.add('boot-log--flicker');
-      }
+                var finished = false;
+                function finishBoot() {
+                  if (finished) return;
+                  finished = true;
+                  try { sessionStorage.setItem('cepBooted', '1'); } catch (e) { }
+                  boot.classList.add('boot-sequence--exit');
+                  setTimeout(function () {
+                    if (boot && boot.parentNode) boot.remove();
+                  }, 1000);
+                }
 
-      var totalDuration = reduced ? 250 : 3200;
-      var consoleStartDelay = reduced ? 0 : 2500;
-      var startTime = null;
+                var step = -1;
+                function setStep(index) {
+                  if (index === step) return;
+                  step = index;
+                  logEl.textContent = logs[step];
+                  logEl.classList.remove('boot-log--flicker');
+                  void logEl.offsetWidth;
+                  logEl.classList.add('boot-log--flicker');
+                }
 
-      function tick(now) {
-        if (startTime === null) startTime = now;
-        var elapsed = now - startTime;
-        var pct = Math.min(100, Math.round((elapsed / totalDuration) * 100));
+                var totalDuration = reduced ? 250 : 3200;
+                var consoleStartDelay = reduced ? 0 : 2500;
+                var startTime = null;
 
-        fillEl.style.width = pct + '%';
-        pctEl.textContent = pct + '%';
+                function tick(now) {
+                  if (startTime === null) startTime = now;
+                  var elapsed = now - startTime;
+                  var pct = Math.min(100, Math.round((elapsed / totalDuration) * 100));
 
-        var logIndex = Math.min(logs.length - 1, Math.floor((pct / 100) * logs.length));
-        setStep(logIndex);
+                  fillEl.style.width = pct + '%';
+                  pctEl.textContent = pct + '%';
 
-        var liveCount = Math.round((pct / 100) * sysDots.length);
-        for (var i = 0; i < sysDots.length; i++) {
-          sysDots[i].classList.toggle('is-live', i < liveCount);
-        }
+                  var logIndex = Math.min(logs.length - 1, Math.floor((pct / 100) * logs.length));
+                  setStep(logIndex);
 
-        if (pct < 100) {
-          requestAnimationFrame(tick);
-        } else {
-          statusEl.textContent = 'Online';
-          statusEl.classList.add('boot-status--online');
-          setTimeout(finishBoot, reduced ? 150 : 550);
-        }
-      }
+                  var liveCount = Math.round((pct / 100) * sysDots.length);
+                  for (var i = 0; i < sysDots.length; i++) {
+                    sysDots[i].classList.toggle('is-live', i < liveCount);
+                  }
 
-      setTimeout(function () { requestAnimationFrame(tick); }, consoleStartDelay);
+                  if (pct < 100) {
+                    requestAnimationFrame(tick);
+                  } else {
+                    statusEl.textContent = 'Online';
+                    statusEl.classList.add('boot-status--online');
+                    setTimeout(finishBoot, reduced ? 150 : 550);
+                  }
+                }
 
-      function skip() {
-        boot.removeEventListener('click', skip);
-        document.removeEventListener('keydown', skip);
-        finishBoot();
-      }
-      boot.addEventListener('click', skip);
-      document.addEventListener('keydown', skip);
+                setTimeout(function () { requestAnimationFrame(tick); }, consoleStartDelay);
 
-      setTimeout(finishBoot, 5000);
-    })();
-  </script>
-  <script src="ui_controller.js"></script>
+                function skip() {
+                  boot.removeEventListener('click', skip);
+                  document.removeEventListener('keydown', skip);
+                  finishBoot();
+                }
+                boot.addEventListener('click', skip);
+                document.addEventListener('keydown', skip);
+
+                setTimeout(finishBoot, 5000);
+              })();
+            </script>
+            <script src="ui_controller.js"></script>
 </body>
 
 </html>

@@ -163,11 +163,11 @@ app.on('ready', () => {
         sendToUIConsole('info', `System Recording: ${status}`);
     });
 
-    // 🔴 NEW: Stop All / Clear Queue Event (এটাই তোমার ফাইলে মিসিং ছিল)
+    // 🔴 NEW: Stop All / Clear Queue Event
     ipcMain.on('clear-queue', () => {
         for(let key in messageQueue) { 
             messageQueue[key] = []; 
-        } // Empty all waiting lists
+        } 
         console.log("🛑 Administrator halted all tasks!");
         sendToUIConsole('error', "All pending operations stopped. Queue cleared.");
     });
@@ -189,7 +189,7 @@ app.on('ready', () => {
         const targetWorker = target === 'auto' ? 'administrator' : target;
         
         if (!messageQueue[targetWorker]) messageQueue[targetWorker] = [];
-        messageQueue[targetWorker].push(taskData); // মেসেজ লাইনে দাঁড়িয়ে গেলো!
+        messageQueue[targetWorker].push(taskData);
 
         console.log(`📥 Added task to ${targetWorker.toUpperCase()}'s Waiting List.`);
         sendToUIConsole('sent', `Task queued for ${targetWorker.toUpperCase()}`);
@@ -345,11 +345,10 @@ app.on('ready', () => {
                                 timestamp: new Date().toISOString()
                             };
 
-                            // 🔴 AI এর রিপ্লাইগুলো সরাসরি ফাইলে না লিখে ওয়েটিং লিস্টে (Queue) ঢুকিয়ে দেওয়া হচ্ছে!
                             if (!messageQueue[targetWorker]) messageQueue[targetWorker] = [];
                             messageQueue[targetWorker].push(newTask);
                             
-                            fs.unlinkSync(filePath); // আউটবক্স থেকে ফাইল ডিলিট
+                            fs.unlinkSync(filePath); 
                         }
                     } catch (e) {
                         console.log(`[ERROR] Processing file ${file}: ${e.message}`);
@@ -363,16 +362,15 @@ app.on('ready', () => {
             if (messageQueue[worker].length > 0) {
                 const inboxPath = path.join(inboxDir, `${worker}_inbox.json`);
                 
-                // শুধুমাত্র যদি ইনবক্স ফাঁকা থাকে (AI আগের কাজ শেষ করে ফাইল ডিলিট করে দেয়), তবেই নতুন মেসেজ ঢুকবে!
                 if (!fs.existsSync(inboxPath)) {
-                    const nextTask = messageQueue[worker].shift(); // ওয়েটিং লিস্ট থেকে প্রথম মেসেজটা নিলাম
-                    fs.writeFileSync(inboxPath, JSON.stringify(nextTask, null, 4)); // ইনবক্সে দিয়ে দিলাম
+                    const nextTask = messageQueue[worker].shift(); 
+                    fs.writeFileSync(inboxPath, JSON.stringify(nextTask, null, 4)); 
                     console.log(`✅ [QUEUE] Sent waiting task to ${worker.toUpperCase()}'s Inbox! (${messageQueue[worker].length} tasks remaining)`);
                 }
             }
         }
 
-    }, 2000); // প্রতি ২ সেকেন্ড পর পর চেক করবে
+    }, 2000); 
 
     ipcMain.handle('get-existing-accounts', async () => {
         const accPath = path.join(__dirname, 'Accounts');
@@ -437,15 +435,18 @@ app.on('ready', () => {
 let flowEngineProcess = null;
 
 ipcMain.on('start-flow-engine', (event, data) => {
-    const { prompts, accountName } = data;
+    // 🔴 FIX: UI থেকে browserName রিসিভ করা হচ্ছে
+    const { prompts, accountName, browserName } = data;
     const enginePath = path.join(__dirname, 'AI_Workers', 'flow_engine.js');
 
     if (flowEngineProcess) {
         try { flowEngineProcess.kill(); } catch(e){}
     }
 
-    console.log(`🚀 Starting Flow Video Engine with Profile: ${accountName}`);
-    flowEngineProcess = fork(enginePath, [accountName], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
+    console.log(`🚀 Starting Flow Video Engine with Profile: ${accountName} on Browser: ${browserName || 'chrome'}`);
+    
+    // 🔴 FIX: ইঞ্জিনে browserName পাঠানো হচ্ছে
+    flowEngineProcess = fork(enginePath, [accountName, browserName || 'chrome'], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
 
     flowEngineProcess.on('message', (msg) => {
         if (msg.type === 'console') {
@@ -474,15 +475,18 @@ ipcMain.on('stop-flow-engine', () => {
 let geminiImageEngineProcess = null;
 
 ipcMain.on('start-gemini-image-engine', (event, data) => {
-    const { prompts, accountName } = data;
+    // 🔴 FIX: UI থেকে browserName রিসিভ করা হচ্ছে
+    const { prompts, accountName, browserName } = data;
     const enginePath = path.join(__dirname, 'AI_Workers', 'gemini_image_engine.js');
 
     if (geminiImageEngineProcess) {
         try { geminiImageEngineProcess.kill(); } catch(e){}
     }
 
-    console.log(`🚀 Starting Gemini Image Engine with Profile: ${accountName}`);
-    geminiImageEngineProcess = fork(enginePath, [accountName], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
+    console.log(`🚀 Starting Gemini Image Engine with Profile: ${accountName} on Browser: ${browserName || 'chrome'}`);
+    
+    // 🔴 FIX: ইঞ্জিনে browserName পাঠানো হচ্ছে
+    geminiImageEngineProcess = fork(enginePath, [accountName, browserName || 'chrome'], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
 
     geminiImageEngineProcess.on('message', (msg) => {
         if (msg.type === 'console') {

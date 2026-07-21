@@ -2,44 +2,138 @@
 // FILE: AI_Workers/gemini_image_engine.js
 // ==========================================
 
-const { chromium } = require('playwright');
+const { chromium, firefox } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 const MASTER_DIR = path.join(__dirname, '..', 'Master_Controller');
 const INPUT_SELECTOR = (() => { try { return JSON.parse(fs.readFileSync(path.join(MASTER_DIR, 'ai_selectors.json'))).gemini.chatBox; } catch(e) { return 'rich-textarea, textarea, div[role="textbox"][contenteditable="true"], .ql-editor'; } })();
 
-// UI থেকে পাঠানো অ্যাকাউন্টের নাম রিসিভ করা (ডিফল্ট: Gemini_Profile)
 const profileName = process.argv[2] || 'Normal_Browser';
+const browserChoice = process.argv[3] || 'chrome';
 const ACCOUNTS_DIR = path.join(__dirname, '..', 'Accounts', profileName);
 
 if (!fs.existsSync(ACCOUNTS_DIR)) fs.mkdirSync(ACCOUNTS_DIR, { recursive: true });
 
 let browser, context, page;
 let isRunning = false;
-let waitForUserPromise = null; // 🔴 ইউজারের জন্য অনন্তকাল ওয়েট করার প্রমিস
+let waitForUserPromise = null;
 
-// 🔴 Helper: main.js এর মাধ্যমে UI-তে লাইভ কনসোল লগ পাঠানো
 function sendLog(type, text) {
     if (process.send) process.send({ type: 'console', logType: type, text: text });
     else console.log(`[${type.toUpperCase()}] ${text}`);
 }
 
-// 🔴 Helper: প্রগ্রেস বার আপডেট করার জন্য স্ট্যাটাস পাঠানো
 function sendStatus(state, data = {}) {
     if (process.send) process.send({ type: 'status', state, ...data });
 }
 
 const randomDelay = (min, max) => new Promise(resolve => setTimeout(resolve, Math.random() * (max - min) + min));
 
+function getBrowserExecutablePath(browserName) {
+    const platform = process.platform; 
+    const userProfile = process.env.USERPROFILE || ''; 
+    const localAppData = process.env.LOCALAPPDATA || '';
+    const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
+    const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+
+    const paths = {
+        brave: {
+            win32: [
+                `${programFiles}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
+                `${programFilesX86}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
+                `${localAppData}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`
+            ],
+            darwin: ['/Applications/Brave Browser.app/Contents/MacOS/Brave Browser']
+        },
+        opera: {
+            win32: [
+                `${localAppData}\\Programs\\Opera\\launcher.exe`,
+                `${localAppData}\\Programs\\Opera\\opera.exe`,
+                `${localAppData}\\Programs\\Opera GX\\launcher.exe`,
+                `${localAppData}\\Programs\\Opera GX\\opera.exe`,
+                `${programFiles}\\Opera\\launcher.exe`,
+                `${programFiles}\\Opera\\opera.exe`,
+                `${programFilesX86}\\Opera\\launcher.exe`,
+                `${programFilesX86}\\Opera\\opera.exe`
+            ],
+            darwin: ['/Applications/Opera.app/Contents/MacOS/Opera']
+        },
+        vivaldi: {
+            win32: [
+                `${localAppData}\\Vivaldi\\Application\\vivaldi.exe`, 
+                `${programFiles}\\Vivaldi\\Application\\vivaldi.exe`
+            ],
+            darwin: ['/Applications/Vivaldi.app/Contents/MacOS/Vivaldi']
+        },
+        tor: { 
+            win32: [
+                `${userProfile}\\Desktop\\Tor Browser\\Browser\\firefox.exe`,
+                `${userProfile}\\OneDrive\\Desktop\\Tor Browser\\Browser\\firefox.exe`,
+                `${localAppData}\\Tor Browser\\Browser\\firefox.exe`,
+                `${programFiles}\\Tor Browser\\Browser\\firefox.exe`,
+                `${programFilesX86}\\Tor Browser\\Browser\\firefox.exe`,
+                `C:\\Tor Browser\\Browser\\firefox.exe`
+            ],
+            darwin: ['/Applications/Tor Browser.app/Contents/MacOS/firefox']
+        },
+        firefox: { 
+            win32: [
+                `${programFiles}\\Mozilla Firefox\\firefox.exe`,
+                `${programFilesX86}\\Mozilla Firefox\\firefox.exe`,
+                `${localAppData}\\Mozilla Firefox\\firefox.exe`
+            ],
+            darwin: ['/Applications/Firefox.app/Contents/MacOS/firefox']
+        }
+    };
+
+    if (paths[browserName] && paths[browserName][platform]) {
+        for (let p of paths[browserName][platform]) {
+            if (fs.existsSync(p)) return p;
+        }
+    }
+    return undefined; 
+}
+
+const DOWNLOAD_URLS = {
+    brave: 'https://brave.com/download/',
+    opera: 'https://www.opera.com/download',
+    vivaldi: 'https://vivaldi.com/download/',
+    tor: 'https://www.torproject.org/download/',
+    firefox: 'https://www.mozilla.org/firefox/new/'
+};
+
 async function startAutomation(prompts) {
     if (isRunning) return;
     isRunning = true;
 
     try {
-        sendLog('info', `🚀 Launching Gemini Image Automation on Profile: [${profileName}]`);
+        sendLog('info', `🚀 Launching Gemini Image Engine on Profile: [${profileName}] via [${browserChoice.toUpperCase()}]`);
         sendLog('info', `📊 Total Prompts Received: ${prompts.length}`);
 
-// --- 🔴 ডাইনামিক পোর্ট ও হাইব্রিড কানেকশন ম্যাজিক ---
+        const bName = browserChoice.toLowerCase();
+
+        if (['brave', 'opera', 'vivaldi', 'tor', 'firefox'].includes(bName)) {
+            const customPath = getBrowserExecutablePath(bName);
+            if (!customPath) {
+                sendLog('error', `⚠️ ${bName.toUpperCase()} is not installed on your PC!`);
+                sendLog('info', `Redirecting to the official download page...`);
+                
+                try {
+                    const tempBrowser = await chromium.launch({ channel: 'chrome', headless: false, args: ['--start-maximized'] });
+                    const tempPage = await tempBrowser.newPage();
+                    await tempPage.goto(DOWNLOAD_URLS[bName]);
+                } catch (fallbackError) {
+                    const tempBrowserEdge = await chromium.launch({ channel: 'msedge', headless: false, args: ['--start-maximized'] });
+                    const tempPageEdge = await tempBrowserEdge.newPage();
+                    await tempPageEdge.goto(DOWNLOAD_URLS[bName]);
+                }
+                
+                sendStatus('idle');
+                isRunning = false;
+                return; 
+            }
+        }
+
         const PORTS_FILE = path.join(MASTER_DIR, 'active_ports.json');
         let targetPort = 9222;
         
@@ -63,40 +157,63 @@ async function startAutomation(prompts) {
         
         try {
             sendLog('connect', `Checking for existing Browser on Port ${targetPort}...`);
-            browser = await chromium.connectOverCDP(endpoint);
-            context = browser.contexts()[0];
-            page = await context.newPage();
-            sendLog('connect', `✅ Connected to existing browser session!`);
+            if (bName !== 'firefox' && bName !== 'tor') {
+                browser = await chromium.connectOverCDP(endpoint);
+                context = browser.contexts()[0];
+                page = await context.newPage();
+                sendLog('connect', `✅ Connected to existing browser session!`);
+            } else {
+                throw new Error("Firefox/Tor needs fresh launch");
+            }
         } catch (cdpError) {
-            sendLog('connect', `Launching new browser window...`);
-            context = await chromium.launchPersistentContext(ACCOUNTS_DIR, {
-                channel: 'chrome',
+            sendLog('connect', `Launching new ${browserChoice.toUpperCase()} window...`);
+            
+            let launchConfig = {
                 headless: false,
                 viewport: null,
+                ignoreDefaultArgs: ["--enable-automation"],
                 args: [
                     `--remote-debugging-port=${targetPort}`,
                     '--start-maximized', 
-                    '--disable-blink-features=AutomationControlled'
+                    '--disable-blink-features=AutomationControlled',
+                    '--no-sandbox',
+                    '--disable-infobars'
                 ]
-            });
+            };
+
+            if (bName === 'firefox' || bName === 'tor') {
+                let ffConfig = { headless: false, viewport: null, args: ['--start-maximized'] };
+                const customPath = getBrowserExecutablePath(bName);
+                if (customPath) ffConfig.executablePath = customPath;
+                context = await firefox.launchPersistentContext(ACCOUNTS_DIR, ffConfig);
+            } else {
+                if (bName === 'edge') launchConfig.channel = 'msedge';
+                else if (bName === 'chrome') launchConfig.channel = 'chrome';
+                else if (['brave', 'opera', 'vivaldi'].includes(bName)) launchConfig.executablePath = getBrowserExecutablePath(bName);
+                
+                context = await chromium.launchPersistentContext(ACCOUNTS_DIR, launchConfig);
+            }
+            
             page = context.pages()[0] || (await context.newPage());
         }
-        // ---------------------------------------------------------
 
         page.setDefaultTimeout(0);
 
         sendLog('connect', 'Navigating to Gemini...');
         await page.goto('https://gemini.google.com/app', { waitUntil: 'domcontentloaded' });
 
-        // ==========================================================
-        // 🔥 MAGIC FIX: ইউজারের জন্য অনন্তকাল অপেক্ষা করবে
-        // ==========================================================
         sendLog('waiting', '🛑 ACTION REQUIRED: ব্রাউজারে লগইন করুন এবং চ্যাট সিলেক্ট করুন। রেডি হলে ড্যাশবোর্ড থেকে "Resume" বাটনে ক্লিক করুন!');
-        sendStatus('paused'); // UI কে বলে দিলাম যে বট পজ হয়ে আছে
+        sendStatus('paused'); 
         
-        // যতক্ষণ না ইউজার Resume বাটনে ক্লিক করবে, কোড এখানে আটকে থাকবে
         await new Promise(resolve => { waitForUserPromise = resolve; });
         
+        // 🔴 MAGIC FIX: ইউজার নতুন ট্যাব খুললেও যেন ইঞ্জিন ক্র্যাশ না করে
+        const allTabs = context.pages();
+        if (allTabs.length > 0) {
+            page = allTabs.find(p => p.url().includes('google.com')) || allTabs[allTabs.length - 1];
+            try { await page.bringToFront(); } catch(e){} // ট্যাবটিকে সামনে নিয়ে আসা
+        }
+
         sendLog('ready', '▶️ Resume signal received! Starting automation...');
         sendStatus('running');
 
@@ -110,21 +227,18 @@ async function startAutomation(prompts) {
             sendLog('progress', `--- 🎨 Generating Image (Prompt ${i + 1} / ${prompts.length}) ---`);
             sendStatus('prompt', { index: i, text: currentPrompt });
 
-// ইনপুট বক্সটি লোড হওয়া পর্যন্ত অপেক্ষা করা
-            const promptBox = page.locator(INPUT_SELECTOR).last(); // .first() এর বদলে .last() হবে
+            const promptBox = page.locator(INPUT_SELECTOR).last(); 
             await promptBox.waitFor({ state: 'visible', timeout: 0 });
 
             await promptBox.click({ force: true });
             await page.waitForTimeout(300);
             
-            // কিবোর্ড দিয়ে সিলেক্ট অল করে ডিলিট করা
             await page.keyboard.press('Control+A');
             await page.keyboard.press('Backspace');
             await randomDelay(300, 600);
 
             sendLog('typing', `Typing prompt...`);
             
-            // সুপার ফাস্ট কপি-পেস্ট ইনজেকশন (যেকোনো বক্সে কাজ করবে)
             await page.evaluate((text) => {
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
@@ -140,11 +254,9 @@ async function startAutomation(prompts) {
 
             await page.keyboard.press('Enter');
 
-            // জেমিনির প্রসেসিং-এর সময় অপেক্ষা করা
             sendLog('generating', `[PROMPT ${i + 1}] Waiting for image generation to complete...`);
             await randomDelay(3000, 5000); 
             
-            // জেনারেট হওয়া পর্যন্ত অপেক্ষা করা (Stop বাটন দেখা গেলে বুঝব জেনারেট হচ্ছে)
             const stopButtonSelector = 'button[aria-label*="Stop"]';
             const isGenerating = await page.locator(stopButtonSelector).count();
             if (isGenerating > 0) {
@@ -154,10 +266,8 @@ async function startAutomation(prompts) {
             sendLog('completed', `🎉 Image generated successfully!`);
             await randomDelay(4000, 6000); 
 
-            // UI তে প্রগ্রেস বার আপডেট পাঠানো
             sendStatus('progress', { completed: i + 1, total: prompts.length });
 
-            // অটো-রিফ্রেশ লজিক (প্রতি ৮টি প্রম্পট পর পর)
             sessionPromptCount++;
             if (sessionPromptCount >= 8) {
                 sendLog('info', `[🔄 AUTO-REFRESH] Refreshing page to clear RAM/Memory...`);
@@ -177,12 +287,10 @@ async function startAutomation(prompts) {
     }
 }
 
-// 🔴 Master Controller এর সিগন্যাল রিসিভ করা
 process.on('message', async (msg) => {
     if (msg.type === 'start') {
         startAutomation(msg.prompts);
     } else if (msg.type === 'resume') {
-        // UI থেকে Resume সিগন্যাল পেলে বটের আটকে থাকা প্রমিস সলভ করে দেবে
         if (waitForUserPromise) {
             waitForUserPromise();
             waitForUserPromise = null;
