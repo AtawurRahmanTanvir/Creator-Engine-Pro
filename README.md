@@ -2,7 +2,7 @@
 # 🛑 STRICT LEGAL WARNING & COPYRIGHT NOTICE 🛑
 
 **PROPRIETARY AND CLOSED SOURCE SOFTWARE**
-Copyright (c) 2026 Ataur Rahman. All Rights Reserved.
+Copyright (c) 2026 Atawur Rahman. All Rights Reserved.
 
 This repository is strictly for **VIEWING PURPOSES ONLY**. It is **NOT** open-source. 
 
