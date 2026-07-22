@@ -1358,4 +1358,116 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 3000);
 
-});
+// ==========================================
+    // ১১. DYNAMIC NOTIFICATION SYSTEM (100% UI Safe)
+    // ==========================================
+    async function loadDynamicNotifications() {
+        const listContainer = document.getElementById('dynamicNotificationList');
+        const badge = document.getElementById('mainNotifBadge');
+        
+        if (!listContainer) return;
+
+        try {
+            // 🔴 Node.js 'fs' এর বদলে সরাসরি Fetch API ব্যবহার করা হয়েছে
+            const response = await fetch('../Master_Controller/notifications.json');
+            
+            if (!response.ok) {
+                listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-tertiary);">No new notifications found.</div>';
+                return;
+            }
+
+            const notifications = await response.json();
+            listContainer.innerHTML = ''; // আগের সব মুছে ফেলা
+            let unreadCount = 0;
+
+            if(notifications.length === 0) {
+                listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-tertiary);">No new notifications found.</div>';
+                return;
+            }
+
+            notifications.forEach(notif => {
+                if (!notif.isRead) unreadCount++;
+
+                // আইকন লজিক
+                let iconHtml = '';
+                if (notif.iconType === 'system') {
+                    iconHtml = `<div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; display: flex; align-items: center; justify-content: center;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+                                </div>`;
+                } else {
+                    iconHtml = `<div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-primary); color: var(--bg-void); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
+                                    AR
+                                </div>`;
+                }
+
+                const notifEl = document.createElement('div');
+                notifEl.className = `notif-item ${notif.isRead ? 'read' : 'unread'}`;
+                notifEl.style.background = notif.isRead ? 'transparent' : (notif.iconType === 'system' ? 'rgba(0, 198, 255, 0.06)' : 'rgba(201, 154, 91, 0.08)');
+                
+                notifEl.innerHTML = `
+                    <div style="position: relative;">
+                      ${iconHtml}
+                      <div class="notif-unread-dot" style="opacity: ${notif.isRead ? '0' : '1'}; transform: scale(${notif.isRead ? '0' : '1'});"></div>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: ${notif.iconType === 'system' ? '#00c6ff' : 'var(--text-primary)'};">${notif.sender}</h4>
+                        <span style="font-size: 11px; color: ${notif.iconType === 'system' ? '#00c6ff' : 'var(--accent-primary)'}; font-weight: 500;">${notif.time}</span>
+                      </div>
+                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 600; color: var(--text-primary);">${notif.title}</h5>
+                      <div class="notif-preview" style="display: block;">${notif.preview}</div>
+                      <div class="notif-full-body" style="max-height: 0px; opacity: 0; overflow: hidden; transition: all 0.4s ease;">
+                        ${notif.body}
+                      </div>
+                    </div>
+                `;
+
+                notifEl.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const isExpanded = this.classList.contains('expanded');
+                    const preview = this.querySelector('.notif-preview');
+                    const fullBody = this.querySelector('.notif-full-body');
+
+                    if (isExpanded) {
+                        this.classList.remove('expanded');
+                        preview.style.display = 'block';
+                        fullBody.style.maxHeight = '0px';
+                        fullBody.style.opacity = '0';
+                        fullBody.style.marginTop = '0px';
+                        fullBody.style.paddingTop = '0px';
+                        fullBody.style.borderTop = 'none';
+                    } else {
+                        this.classList.add('expanded');
+                        preview.style.display = 'none';
+                        fullBody.style.maxHeight = '500px';
+                        fullBody.style.opacity = '1';
+                        fullBody.style.marginTop = '10px';
+                        fullBody.style.paddingTop = '10px';
+                        fullBody.style.borderTop = '1px solid rgba(255, 255, 255, 0.05)';
+                    }
+
+                    if (this.classList.contains('unread')) {
+                        this.classList.replace('unread', 'read');
+                        this.style.background = 'transparent';
+                        const dot = this.querySelector('.notif-unread-dot');
+                        if (dot) { dot.style.opacity = '0'; dot.style.transform = 'scale(0)'; }
+                        
+                        unreadCount = Math.max(0, unreadCount - 1);
+                        if(badge) badge.style.display = unreadCount > 0 ? 'block' : 'none';
+                    }
+                });
+
+                listContainer.appendChild(notifEl);
+            });
+
+            if (badge) badge.style.display = unreadCount > 0 ? 'block' : 'none';
+
+        } catch (err) {
+            console.error("Error loading notifications:", err);
+            listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--color-error); font-size: 12px;">Failed to load notifications.<br>Please make sure <b>notifications.json</b> is saved inside Master_Controller folder.</div>';
+        }
+    }
+
+    setTimeout(loadDynamicNotifications, 500); 
+
+}); // <--- এটি আপনার মেইন DOMContentLoaded এর একদম শেষের ক্লোজিং ব্র্যাকেট!

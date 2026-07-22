@@ -3643,7 +3643,7 @@
                   <path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8z" />
                   <path d="M9.5 17a2.5 2.5 0 0 0 5 0" />
                 </svg>
-                <span class="badge-dot" id="mainNotifBadge"></span>
+                <span class="badge-dot" id="mainNotifBadge" style="display: none;"></span>
               </button>
 
               <div class="popover popover--down" id="notifPopover"
@@ -3679,7 +3679,6 @@
                     background: var(--bg-elevated) !important;
                   }
 
-                  /* Preview Line */
                   .notif-preview {
                     font-size: 12px;
                     color: var(--text-tertiary);
@@ -3691,14 +3690,12 @@
                     margin-top: 4px;
                   }
 
-                  /* Full Body (Controlled by JS) */
                   .notif-full-body {
                     font-size: 12px;
                     color: var(--text-tertiary);
                     line-height: 1.6;
                   }
 
-                  /* Unread Dot */
                   .notif-unread-dot {
                     position: absolute;
                     top: -2px;
@@ -3712,99 +3709,10 @@
                   }
                 </style>
 
-                <div style="overflow-y: auto; display: flex; flex-direction: column; flex: 1;">
-
-                  <div class="notif-item unread" style="background: rgba(0, 198, 255, 0.06);">
-                    <div style="position: relative;">
-                      <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; display: flex; align-items: center; justify-content: center;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                          style="width: 20px; height: 20px;">
-                          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                        </svg>
-                      </div>
-                      <div class="notif-unread-dot"></div>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                      <div
-                        style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-                        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: #00c6ff;">System Update</h4>
-                        <span style="font-size: 11px; color: #00c6ff; font-weight: 500;">Just now</span>
-                      </div>
-                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 600; color: var(--text-primary);">Creator
-                        Engine Pro v1.0.1 is Live! ✨</h5>
-                      <div class="notif-preview">Multi-browser core (Super 7) and advanced stealth error handling are
-                        now active...</div>
-                      <div class="notif-full-body">
-                        <strong>What's new in this major release:</strong><br><br>
-                        • <strong>Super 7 Browsers:</strong> Added full automated integration for Chrome, Edge, Brave,
-                        Opera, Vivaldi, Firefox, and Tor Browser.<br><br>
-                        • <strong>Universal Extractor:</strong> Implemented a 3-Tier fallback logic to completely
-                        eliminate "Extraction Failed" bugs across all AI engines. Tables, lists, and code blocks now
-                        format perfectly.<br><br>
-                        • <strong>Premium UI:</strong> 3D Cyberpunk consoles, animated HOT/PRO badges, and interactive
-                        UX upgrades applied globally.
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="notif-item unread" style="background: rgba(201, 154, 91, 0.08);">
-                    <div style="position: relative;">
-                      <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-primary); color: var(--bg-void); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
-                        AR</div>
-                      <div class="notif-unread-dot"></div>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                      <div
-                        style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-                        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--text-primary);">Atawur
-                          Rahman</h4>
-                        <span style="font-size: 11px; color: var(--accent-primary); font-weight: 500;">5m ago</span>
-                      </div>
-                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 600; color: var(--text-primary);">Welcome to
-                        Creator Engine Pro! 🚀</h5>
-                      <div class="notif-preview">Hello! I'm a student at Barishal Polytechnic Institute (BPI). As a
-                        student...</div>
-                      <div class="notif-full-body">
-                        Hello! I'm a student at <strong>Barishal Polytechnic Institute (BPI)</strong>. As a student, I
-                        constantly try to bring my imagination to reality. I have spent many sleepless nights coding and
-                        building this software for you to make your workflow easier. Thank you for being a part of this
-                        journey. Enjoy creating!
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="notif-item read" style="background: transparent;">
-                    <div style="position: relative;">
-                      <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-tertiary); display: flex; align-items: center; justify-content: center;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                          style="width: 20px; height: 20px;">
-                          <rect x="3" y="3" width="18" height="18" rx="2" />
-                          <path d="M9 3v18" />
-                          <path d="M15 3v18" />
-                        </svg>
-                      </div>
-                      <div class="notif-unread-dot" style="opacity: 0; transform: scale(0);"></div>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                      <div
-                        style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-                        <h4 style="margin: 0; font-size: 13px; font-weight: 500; color: var(--text-secondary);">System
-                          Updates</h4>
-                        <span style="font-size: 11px; color: var(--text-tertiary);">2 hrs ago</span>
-                      </div>
-                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 500; color: var(--text-secondary);">AI
-                        Workspace Initialized</h5>
-                      <div class="notif-preview">Your environment is ready. You can now start adding prompts...</div>
-                      <div class="notif-full-body">
-                        Your environment is ready. You can now start adding prompts and automate your tasks smoothly.
-                        All AI nodes are waiting for dispatch signals from the orchestrator.
-                      </div>
-                    </div>
-                  </div>
-
+                <!-- 🔴 DYNAMIC LIST CONTAINER -->
+                <div id="dynamicNotificationList"
+                  style="overflow-y: auto; display: flex; flex-direction: column; flex: 1;">
+                  <!-- JS automatically will load notifications here -->
                 </div>
 
                 <div
@@ -6023,77 +5931,83 @@
                 <div
                   style="max-height: 450px; overflow-y: auto; padding-right: 15px; margin-top: 15px; font-size: 13px; color: #b0b0b0; line-height: 1.6;">
 
-                  <!-- Developer Info & WhatsApp Link -->
+                  <!-- Developer Info & Social Links -->
                   <div
                     style="background: rgba(201,154,91,0.05); border: 1px solid rgba(201,154,91,0.2); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
                       <h4 style="color: var(--accent-primary); margin: 0 0 5px 0; font-size: 15px;">Creator Engine Pro
-                        v1.0</h4>
+                        v1.1.0</h4>
                       <p style="margin: 0 0 4px 0; color: #fff;"><strong>Developer:</strong> Atawur Rahman</p>
                       <p style="margin: 0; font-size: 12px;">Built for automated multi-agent workflows.</p>
                     </div>
-                    <a href="https://wa.me/8801950265366" target="_blank"
-                      style="background: #25D366; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: 0.2s;">
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                        <path
-                          d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.305-.88-.653-1.473-1.46-1.646-1.757-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
-                      </svg>
-                      Feedback / Updates
-                    </a>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+
+                      <!-- 🔴 WhatsApp Button (Fixed for System Browser/App) -->
+                      <a href="https://wa.me/8801950265366"
+                        onclick="event.preventDefault(); require('electron').shell.openExternal(this.href);"
+                        style="background: #25D366; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 11px; display: flex; align-items: center; gap: 6px; transition: 0.2s; cursor: pointer;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                          <path
+                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.305-.88-.653-1.473-1.46-1.646-1.757-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
+                        </svg>
+                        WhatsApp
+                      </a>
+
+                      <!-- 🔴 Facebook Button (Fixed for System Browser) -->
+                      <a href="https://www.facebook.com/Atawur.Rahman.Tanvir"
+                        onclick="event.preventDefault(); require('electron').shell.openExternal(this.href);"
+                        style="background: #1877F2; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 11px; display: flex; align-items: center; gap: 6px; transition: 0.2s; cursor: pointer;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                          <path
+                            d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                        </svg>
+                        Facebook
+                      </a>
+
+                    </div>
                   </div>
 
                   <!-- How it works -->
                   <h4 style="color: #fff; margin-bottom: 8px; font-size: 14px;">🏗️ AI Roles & Architecture</h4>
-                  <p style="margin-bottom: 12px;">This application uses a strict <b>Tag Routing System</b>. The AIs
-                    have
-                    specific
-                    rules on who they can communicate with:</p>
+                  <p style="margin-bottom: 12px;">This application uses a strict <b>Tag Routing System</b>. The AIs have
+                    specific rules on who they can communicate with:</p>
                   <ul style="padding-left: 20px; margin-top: 0; margin-bottom: 15px;">
-                    <li><b style="color: #ffb74d;">@administrator</b>: The orchestrator. It manages tasks, decides
-                      which
-                      worker to
-                      use, and sends the final output to the Editor.</li>
-                    <li><b style="color: #64b5f6;">Worker AIs (@chatgpt, @gemini, etc)</b>: They do the hard work.
-                      They
-                      can ONLY
-                      communicate back to the <code>@administrator</code>.</li>
-                    <li><b style="color: #e91e63;">@final</b>: The Editor. It reviews the Administrator's compiled
-                      data,
-                      formats
-                      it perfectly, and outputs it to you.</li>
+                    <li><b style="color: #ffb74d;">@administrator</b>: The Custom GPT Orchestrator. It manages tasks,
+                      decides which worker to use, and waits for your Dispatch approval.</li>
+                    <li><b style="color: #64b5f6;">Worker AIs (@chatgpt, @gemini, etc)</b>: They do the hard work. They
+                      can ONLY communicate back to the <code>@administrator</code>.</li>
+                    <li><b style="color: #e91e63;">@final</b>: The Editor. It reviews the Administrator's compiled data,
+                      formats it perfectly, and outputs it to you.</li>
                   </ul>
 
                   <!-- System Recording -->
                   <h4 style="color: #e57373; margin-bottom: 8px; font-size: 14px;">🎙️ "System Recording" Switch</h4>
-                  <p style="margin-bottom: 8px;">To prevent AIs from talking to each other automatically before they
-                    know their
-                    jobs, use this switch:</p>
+                  <p style="margin-bottom: 8px;">To prevent AIs from talking to each other prematurely, use this switch:
+                  </p>
                   <ul style="padding-left: 20px; margin-top: 0; margin-bottom: 15px;">
                     <li style="margin-bottom: 6px;"><strong>🔴 OFF (Warm-up Mode):</strong> The Master Router pauses.
-                      Your
-                      messages are sent directly to the selected AI, but their responses are <b>ignored</b> by the
-                      system. Use
-                      this to train them!</li>
-                    <li><strong>🟢 ON (Active Routing):</strong> The loop starts. If an AI uses a tag (e.g.,
-                      <code>@chatgpt</code>), the message is instantly routed to that AI's inbox automatically.
+                      Your messages are sent directly to the AI, but responses are ignored by the router. Use this to
+                      prepare the environment.</li>
+                    <li><strong>🟢 ON (Active Routing):</strong> The Orchestration loop starts. Tags (e.g.,
+                      <code>@chatgpt</code>) will instantly route data between workers.
                     </li>
                   </ul>
 
                   <!-- Training Guide -->
-                  <h4 style="color: #4CAF50; margin-bottom: 8px; font-size: 14px;">🧠 How to Train Your AIs
-                    (Step-by-Step)</h4>
+                  <h4 style="color: #4CAF50; margin-bottom: 8px; font-size: 14px;">🧠 Starting a Workflow (v1.1.0)</h4>
                   <div
-                    style="background: #141418; padding: 12px; border-radius: 6px; border: 1px left solid #4CAF50; margin-bottom: 12px;">
+                    style="background: #141418; padding: 12px; border-radius: 6px; border-left: 3px solid #4CAF50; margin-bottom: 12px;">
                     <ol style="padding-left: 20px; margin: 0; color: #d0d0d0;">
                       <li style="margin-bottom: 8px;">Turn <b>System Recording OFF</b>.</li>
-                      <li style="margin-bottom: 8px;">Select <b>Administrator</b> and send its master prompt (e.g.,
-                        "Act
-                        as the
-                        Master Orchestrator..."). Wait for it to confirm.</li>
-                      <li style="margin-bottom: 8px;">Select <b>Final</b> and send its formatting rules (e.g., "Act as
-                        the Editor.
-                        Always end with @admin..."). Wait for it to confirm.</li>
-                      <li>Turn <b>System Recording ON</b>. Now give your actual task to the Administrator!</li>
+                      <li style="margin-bottom: 8px;">Select <b>Final AI</b> and send its formatting rules (e.g., "Act
+                        as the Editor. Always format in Markdown..."). Wait for it to confirm.</li>
+                      <li style="margin-bottom: 8px;">Select <b>Administrator</b>. Since it is a pre-trained Custom GPT,
+                        it already knows its role! Just ask <i>"Are you ready?"</i> and ensure it replies in the strict
+                        <b>Planning Mode</b> format.
+                      </li>
+                      <li style="margin-bottom: 8px;">Turn <b>System Recording ON</b>.</li>
+                      <li>Give your actual project to the Administrator. It will plan the steps and <b>wait for your
+                          explicit "Dispatch" command</b> before routing any data!</li>
                     </ol>
                   </div>
                 </div>
@@ -6129,7 +6043,7 @@
                         <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 500;">Software Update</h4>
                         <span id="updateStatusText"
                           style="font-size: 12px; color: var(--text-tertiary); display: block;">Current Version:
-                          v1.0.0</span>
+                          v1.1.0</span>
                       </div>
                       <div style="display: flex; gap: 8px;">
                         <!-- 🔴 New Versions Button -->

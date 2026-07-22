@@ -1,0 +1,42 @@
+[
+  {
+    "id": "notif_v1_1_0",
+    "sender": "System Update",
+    "time": "Just now",
+    "title": "Creator Engine Pro v1.1.0 is Live! 🚀",
+    "preview": "The 'Master Orchestrator' update is here with Custom GPT integration...",
+    "body": "<strong style='color: #00c6ff; font-size: 13px;'>What's new in this major release:</strong><br><br>• <strong style='color: #fff;'>Custom Administrator GPT:</strong> A highly trained, strict orchestration engine that manages AI workers without hallucinating.<br><br>• <strong style='color: #fff;'>Workflow State Machine:</strong> The system now strictly follows isolated states (<span style='color: #C99A5B;'>Planning, Dispatching, Reviewing</span>).<br><br>• <strong style='color: #fff;'>Human Approval Gate:</strong> The Administrator will wait for your explicit <span style='color: #E1685F; font-weight: bold;'>'Dispatch'</span> command before routing any data.<br><br>• <strong style='color: #fff;'>Zero Modification Protocol:</strong> Raw scripts and user data are now <span style='color: #6FAE8C; font-weight: bold;'>100% protected</span>.",
+    "iconType": "system",
+    "isRead": false
+  },
+  {
+    "id": "notif_v1_0_1",
+    "sender": "System Update",
+    "time": "Yesterday",
+    "title": "Creator Engine Pro v1.0.1 is Live! ✨",
+    "preview": "Multi-browser core (Super 7) and advanced stealth error handling are now active...",
+    "body": "<strong style='color: #00c6ff; font-size: 13px;'>Highlights of the previous release:</strong><br><br>• <strong style='color: #fff;'>Super 7 Browsers:</strong> Added full automated integration for Chrome, Edge, Brave, Opera, Vivaldi, Firefox, and Tor Browser.<br><br>• <strong style='color: #fff;'>Universal Extractor:</strong> Implemented a 3-Tier fallback logic to completely eliminate 'Extraction Failed' bugs.<br><br>• <strong style='color: #fff;'>Premium UI:</strong> 3D Cyberpunk consoles, animated <span style='color: #E1685F; font-weight: bold;'>HOT</span> / <span style='color: #8A63D6; font-weight: bold;'>PRO</span> badges applied globally.",
+    "iconType": "system",
+    "isRead": true
+  },
+  {
+    "id": "notif_welcome",
+    "sender": "Atawur Rahman",
+    "time": "2 days ago",
+    "title": "Welcome to Creator Engine Pro! 🚀",
+    "preview": "Hello! I'm a student at Barishal Polytechnic Institute (BPI). As a student...",
+    "body": "Hello! I'm a student at <strong style='color: #C99A5B;'>Barishal Polytechnic Institute (BPI)</strong>. As a student, I constantly try to bring my imagination to reality. I have spent many sleepless nights coding and building this software for you to make your workflow easier. Thank you for being a part of this journey.<br><br><span style='color: #6FAE8C; font-size: 13px; font-weight: 600;'>Enjoy creating!</span>",
+    "iconType": "user",
+    "isRead": true
+  },
+  {
+    "id": "notif_workspace",
+    "sender": "System Updates",
+    "time": "3 days ago",
+    "title": "AI Workspace Initialized ⚙️",
+    "preview": "Your environment is ready. You can now start adding prompts...",
+    "body": "<span style='color: #fff;'>Your environment is ready.</span> You can now start adding prompts and automate your tasks smoothly. All AI nodes are waiting for dispatch signals from the <strong style='color: #C99A5B;'>Orchestrator</strong>.",
+    "iconType": "system",
+    "isRead": true
+  }
+]
