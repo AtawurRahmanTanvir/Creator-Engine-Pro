@@ -1,0 +1,42 @@
+[
+  {
+    "id": "notif_v2_0_0",
+    "sender": "System Update",
+    "timestamp": "2026-07-29T16:00:00Z",
+    "title": "Creator Engine Pro v2.0.0 is Live! 🎉",
+    "preview": "Introducing Media Studio! A brand-new feature with Native OS Dialogs, Colorful Console...",
+    "body": "<strong style='color: #00c6ff; font-size: 13px;'>What's new in the v2.0.0 Mega Update:</strong><br><br>• <strong style='color: #D08B3E;'>Brand New Feature - Media Studio:</strong> An offline, lightning-fast media editor powered by FFmpeg! It comes with auto-overwrite (-y), seamless progress streaming, and a dedicated <span style='color: #E1685F;'>Force Kill</span> switch.<br><br>• <strong style='color: #C99A5B;'>Native OS File Picker:</strong> Say goodbye to annoying browser prompts! Media Studio uses native Windows dialogs to select input files and output folders.<br><br>• <strong style='color: #6FAE8C;'>Colorful Human-Readable Console:</strong> Technical gibberish is gone. The processing console now displays beautiful, color-coded live progress (Time & Speed).<br><br>• <strong style='color: #fff;'>Dynamic Help & GitHub Integration:</strong> The entire Help Documentation is now dynamic, and the Settings menu fetches live version history directly from GitHub without any tokens.",
+    "iconType": "system",
+    "isRead": false
+  },
+  {
+    "id": "notif_v1_1_0",
+    "sender": "System Update",
+    "timestamp": "2026-07-28T10:00:00Z",
+    "title": "Creator Engine Pro v1.1.0 is Live! 🚀",
+    "preview": "The 'Master Orchestrator' update is here with Custom GPT integration...",
+    "body": "<strong style='color: #00c6ff; font-size: 13px;'>Highlights of the previous release:</strong><br><br>• <strong style='color: #fff;'>Custom Administrator GPT:</strong> A highly trained, strict orchestration engine that manages AI workers without hallucinating.<br><br>• <strong style='color: #fff;'>Workflow State Machine:</strong> The system now strictly follows isolated states (<span style='color: #C99A5B;'>Planning, Dispatching, Reviewing</span>).<br><br>• <strong style='color: #fff;'>Human Approval Gate:</strong> The Administrator will wait for your explicit <span style='color: #E1685F; font-weight: bold;'>'Dispatch'</span> command before routing any data.",
+    "iconType": "system",
+    "isRead": true
+  },
+  {
+    "id": "notif_v1_0_1",
+    "sender": "System Update",
+    "timestamp": "2026-07-26T10:00:00Z",
+    "title": "Creator Engine Pro v1.0.1 is Live! ✨",
+    "preview": "Multi-browser core (Super 7) and advanced stealth error handling are now active...",
+    "body": "<strong style='color: #00c6ff; font-size: 13px;'>Highlights of the previous release:</strong><br><br>• <strong style='color: #fff;'>Super 7 Browsers:</strong> Added full automated integration for Chrome, Edge, Brave, Opera, Vivaldi, Firefox, and Tor Browser.<br><br>• <strong style='color: #fff;'>Universal Extractor:</strong> Implemented a 3-Tier fallback logic to completely eliminate 'Extraction Failed' bugs.<br><br>• <strong style='color: #fff;'>Premium UI:</strong> 3D Cyberpunk consoles, animated <span style='color: #E1685F; font-weight: bold;'>HOT</span> / <span style='color: #8A63D6; font-weight: bold;'>PRO</span> badges applied globally.",
+    "iconType": "system",
+    "isRead": true
+  },
+  {
+    "id": "notif_welcome",
+    "sender": "Atawur Rahman",
+    "timestamp": "2026-07-22T10:00:00Z",
+    "title": "Welcome to Creator Engine Pro! 🚀",
+    "preview": "Hello! I'm a student at Barishal Polytechnic Institute (BPI). As a student...",
+    "body": "Hello! I'm a student at <strong style='color: #C99A5B;'>Barishal Polytechnic Institute (BPI)</strong>. As a student, I constantly try to bring my imagination to reality. I have spent many sleepless nights coding and building this software for you to make your workflow easier. Thank you for being a part of this journey.<br><br><span style='color: #6FAE8C; font-size: 13px; font-weight: 600;'>Enjoy creating!</span>",
+    "iconType": "user",
+    "isRead": true
+  }
+]

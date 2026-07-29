@@ -1,11 +1,11 @@
 // ==========================================
-// FILE: main.js (With Smart Waiting List Queue & Stop Logic)
+// FILE: main.js (With Smart Waiting List Queue & Stop Logic & Crash Recovery & Colorful Console)
 // ==========================================
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
-const { fork, spawn } = require('child_process');
+const { fork, spawn, exec } = require('child_process');
 
 let autoUpdater;
 try {
@@ -43,16 +43,16 @@ function fetchRemoteSelectors() {
 fetchRemoteSelectors();
 
 let mainWindow;
-let activeEngines = {}; 
-let isRecordingActive = true; 
+let activeEngines = {};
+let isRecordingActive = true;
 
 // 🔴 MAGIC FIX: GLOBAL WAITING LIST (QUEUE)
-const messageQueue = {}; 
+const messageQueue = {};
 
 const ALLOWED_ROUTES = {
     '@admin': ['@administrator', '@final', '@chatgpt', '@claude', '@gemini', '@qwen', '@deepseek', '@perplexity', '@grok'],
     '@administrator': ['@final', '@chatgpt', '@claude', '@gemini', '@qwen', '@deepseek', '@perplexity', '@grok'],
-    '@final': ['@admin', '@administrator'], 
+    '@final': ['@admin', '@administrator'],
     '@chatgpt': ['@administrator'],
     '@claude': ['@administrator'],
     '@gemini': ['@administrator'],
@@ -70,19 +70,18 @@ function sendToUIConsole(type, text, target = 'workspace') {
     }
 }
 
-let activeBrowsers = {}; 
-let basePort = 9222;     
+let activeBrowsers = {};
 
 const ENGINE_FILES = {
-    'chatgpt': 'AI_Workers/Chatgpt_engine.js', 
+    'chatgpt': 'AI_Workers/Chatgpt_engine.js',
     'claude': 'AI_Workers/claude_engine.js',
     'deepseek': 'AI_Workers/deepseek_engine.js',
     'gemini': 'AI_Workers/gemini_engine.js',
     'grok': 'AI_Workers/grok_engine.js',
     'perplexity': 'AI_Workers/perplexity_engine.js',
     'qwen': 'AI_Workers/qwen_engine.js',
-    'prompt': 'Core_Systems/administrator_engine.js', 
-    'final': 'Core_Systems/Final_engine.js' 
+    'prompt': 'Core_Systems/administrator_engine.js',
+    'final': 'Core_Systems/Final_engine.js'
 };
 
 function updateActiveWorkers() {
@@ -94,7 +93,7 @@ function updateActiveWorkers() {
 function updateActivePorts() {
     const masterDir = path.join(__dirname, 'Master_Controller');
     if (!fs.existsSync(masterDir)) fs.mkdirSync(masterDir, { recursive: true });
-    
+
     let portsData = {};
     for (let acc in activeBrowsers) {
         portsData[acc] = activeBrowsers[acc].port;
@@ -108,7 +107,7 @@ function releaseBrowser(accountName) {
         if (activeBrowsers[accountName].users <= 0) {
             console.log(`🛑 No AI using [${accountName}], closing the Chrome Window...`);
             sendToUIConsole('info', `Closing Chrome Window for [${accountName}]...`);
-            try { activeBrowsers[accountName].process.kill(); } catch(e){}
+            try { activeBrowsers[accountName].process.kill(); } catch (e) { }
             delete activeBrowsers[accountName];
             updateActivePorts();
         }
@@ -120,14 +119,14 @@ app.on('ready', () => {
     const inboxDir = path.join(__dirname, 'Master_Controller', 'Inbox');
     const outboxDir = path.join(__dirname, 'Master_Controller', 'Outbox');
     const finalReportsDir = path.join(__dirname, 'Master_Controller', 'Final_Reports');
-    
+
     if (autoUpdater) autoUpdater.checkForUpdatesAndNotify();
-    
+
     [inboxDir, outboxDir].forEach(dir => {
         if (fs.existsSync(dir)) {
             fs.readdirSync(dir).forEach(file => {
                 if (file.endsWith('.json')) {
-                    try { fs.unlinkSync(path.join(dir, file)); } catch(e){}
+                    try { fs.unlinkSync(path.join(dir, file)); } catch (e) { }
                 }
             });
         } else {
@@ -140,11 +139,11 @@ app.on('ready', () => {
     mainWindow = new BrowserWindow({
         width: 1280, height: 800, minWidth: 1024, minHeight: 768,
         title: "Creator Engine Pro", autoHideMenuBar: true,
-        show: true, 
-        backgroundColor: '#0A0A0C', 
-        icon: path.join(__dirname, 'icon.ico'), 
-        webPreferences: { 
-            nodeIntegration: true, 
+        show: true,
+        backgroundColor: '#0A0A0C',
+        icon: path.join(__dirname, 'icon.ico'),
+        webPreferences: {
+            nodeIntegration: true,
             contextIsolation: false,
             sandbox: false
         }
@@ -163,31 +162,29 @@ app.on('ready', () => {
         sendToUIConsole('info', `System Recording: ${status}`);
     });
 
-    // 🔴 NEW: Stop All / Clear Queue Event
     ipcMain.on('clear-queue', () => {
-        for(let key in messageQueue) { 
-            messageQueue[key] = []; 
-        } 
+        for (let key in messageQueue) {
+            messageQueue[key] = [];
+        }
         console.log("🛑 Administrator halted all tasks!");
         sendToUIConsole('error', "All pending operations stopped. Queue cleared.");
     });
 
-    // 🔴 UI থেকে পাঠানো মেসেজ সরাসরি ওয়েটিং লিস্টে (Queue) যাবে
     ipcMain.on('send-ai-command', (event, data) => {
-        const { text, target } = data; 
-        
+        const { text, target } = data;
+
         let cleanPrompt = text.replace(SYSTEM_TAGS_REGEX, '').trim();
-        if (cleanPrompt === "") cleanPrompt = text; 
+        if (cleanPrompt === "") cleanPrompt = text;
 
         const taskData = {
-            task_id: `task_admin_${Date.now()}_${Math.floor(Math.random()*1000)}`, 
+            task_id: `task_admin_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
             sender: "@admin",
-            prompt: cleanPrompt, 
+            prompt: cleanPrompt,
             timestamp: new Date().toISOString()
         };
 
         const targetWorker = target === 'auto' ? 'administrator' : target;
-        
+
         if (!messageQueue[targetWorker]) messageQueue[targetWorker] = [];
         messageQueue[targetWorker].push(taskData);
 
@@ -200,11 +197,11 @@ app.on('ready', () => {
         let accountName = typeof data === 'string' ? 'Select Account' : data.accountName;
 
         if (!systemId) return;
-        systemId = systemId.toLowerCase(); 
+        systemId = systemId.toLowerCase();
 
         if (activeEngines[systemId]) {
-            try { activeEngines[systemId].process.kill(); } catch(e){}
-            delete activeEngines[systemId]; 
+            try { activeEngines[systemId].process.kill(); } catch (e) { }
+            delete activeEngines[systemId];
         }
 
         const relativePath = ENGINE_FILES[systemId];
@@ -218,16 +215,16 @@ app.on('ready', () => {
 
         console.log(`🚀 Starting ${systemId.toUpperCase()} with Profile: [${accountName}]`);
         sendToUIConsole('connect', `Connecting ${systemId.toUpperCase()} on [${accountName}]`);
-        
+
         setTimeout(() => {
             const proc = fork(enginePath, [accountName], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
 
             proc.stdout.on('data', (data) => {
                 const msg = data.toString().trim();
                 console.log(`[${systemId.toUpperCase()}] ${msg}`);
-                if(msg.includes('Error')) sendToUIConsole('error', `[${systemId.toUpperCase()}] ${msg}`);
-                else if(msg.includes('Finished') || msg.includes('Done')) sendToUIConsole('completed', `[${systemId.toUpperCase()}] ${msg}`);
-                else if(msg.includes('Typing') || msg.includes('Generating')) sendToUIConsole('generating', `[${systemId.toUpperCase()}] ${msg}`);
+                if (msg.includes('Error')) sendToUIConsole('error', `[${systemId.toUpperCase()}] ${msg}`);
+                else if (msg.includes('Finished') || msg.includes('Done')) sendToUIConsole('completed', `[${systemId.toUpperCase()}] ${msg}`);
+                else if (msg.includes('Typing') || msg.includes('Generating')) sendToUIConsole('generating', `[${systemId.toUpperCase()}] ${msg}`);
                 else sendToUIConsole('info', `[${systemId.toUpperCase()}] ${msg}`);
             });
 
@@ -244,20 +241,20 @@ app.on('ready', () => {
             activeEngines[systemId] = { process: proc, account: accountName };
             updateActiveWorkers();
             sendToUIConsole('ready', `${systemId.toUpperCase()} is hooked and ready!`);
-        }, 2000); 
+        }, 2000);
     });
 
     ipcMain.on('stop-engine', (event, systemId) => {
         if (!systemId) return;
         let sysId = typeof systemId === 'string' ? systemId.toLowerCase() : systemId;
         const engineData = activeEngines[sysId];
-        
+
         if (engineData) {
             sendToUIConsole('waiting', `Shutting down ${sysId.toUpperCase()}...`);
-            try { engineData.process.send('shutdown'); } catch(e) {}
+            try { engineData.process.send('shutdown'); } catch (e) { }
             setTimeout(() => {
                 releaseBrowser(engineData.account);
-                try { engineData.process.kill(); } catch(e){}
+                try { engineData.process.kill(); } catch (e) { }
                 delete activeEngines[sysId];
                 updateActiveWorkers();
                 sendToUIConsole('info', `${sysId.toUpperCase()} Engine offline.`);
@@ -268,11 +265,7 @@ app.on('ready', () => {
         }
     });
 
-    // =======================================================
-    // 🔴 6. INTEGRATED ROUTER & WAITING LIST PROCESSOR
-    // =======================================================
     setInterval(() => {
-        // Step A: Process Outbox
         if (fs.existsSync(outboxDir)) {
             fs.readdirSync(outboxDir).forEach(file => {
                 if (file.startsWith('outbox_')) {
@@ -280,14 +273,14 @@ app.on('ready', () => {
                     try {
                         const rawData = fs.readFileSync(filePath, 'utf8');
                         const data = JSON.parse(rawData);
-                        
+
                         const sender = (data.sender || '').toLowerCase();
                         const text = data.response || data.original_prompt || "";
 
                         if (!isRecordingActive) {
                             console.log(`[WARM-UP] 🛑 Ignored output from ${sender} (Recording is OFF)`);
                             sendToUIConsole('info', `[WARM-UP] Ignored response from ${sender.toUpperCase()}`);
-                            fs.unlinkSync(filePath); 
+                            fs.unlinkSync(filePath);
                             return;
                         }
 
@@ -303,14 +296,14 @@ app.on('ready', () => {
                             const cleanTag = tag.toLowerCase();
                             if (allowedForSender.includes(cleanTag)) {
                                 finalTarget = cleanTag;
-                                break; 
+                                break;
                             }
                         }
 
                         if (!finalTarget) {
-                            if (sender === '@final') finalTarget = '@admin'; 
-                            else if (sender === '@administrator') finalTarget = '@final'; 
-                            else if (sender !== '@admin') finalTarget = '@administrator'; 
+                            if (sender === '@final') finalTarget = '@admin';
+                            else if (sender === '@administrator') finalTarget = '@final';
+                            else if (sender !== '@admin') finalTarget = '@administrator';
                             else {
                                 fs.unlinkSync(filePath);
                                 return;
@@ -324,7 +317,7 @@ app.on('ready', () => {
                         }
 
                         let cleanPrompt = text.replace(SYSTEM_TAGS_REGEX, '').trim();
-                        if (cleanPrompt === "") cleanPrompt = text; 
+                        if (cleanPrompt === "") cleanPrompt = text;
 
                         if (finalTarget === '@admin') {
                             console.log(`🎉 Final Output ready for Admin! Sending to UI...`);
@@ -334,21 +327,21 @@ app.on('ready', () => {
                                 mainWindow.webContents.send('final-output-ready', data);
                             }
                             fs.renameSync(filePath, path.join(finalReportsDir, file));
-                        } 
+                        }
                         else {
-                            const targetWorker = finalTarget.replace('@', ''); 
-                            
+                            const targetWorker = finalTarget.replace('@', '');
+
                             const newTask = {
-                                task_id: data.task_id || `task_${Date.now()}`, 
-                                sender: sender, 
-                                prompt: cleanPrompt, 
+                                task_id: data.task_id || `task_${Date.now()}`,
+                                sender: sender,
+                                prompt: cleanPrompt,
                                 timestamp: new Date().toISOString()
                             };
 
                             if (!messageQueue[targetWorker]) messageQueue[targetWorker] = [];
                             messageQueue[targetWorker].push(newTask);
-                            
-                            fs.unlinkSync(filePath); 
+
+                            fs.unlinkSync(filePath);
                         }
                     } catch (e) {
                         console.log(`[ERROR] Processing file ${file}: ${e.message}`);
@@ -357,27 +350,25 @@ app.on('ready', () => {
             });
         }
 
-        // 🔴 Step B: Process Waiting Lists (Queue Manager)
         for (const worker in messageQueue) {
             if (messageQueue[worker].length > 0) {
                 const inboxPath = path.join(inboxDir, `${worker}_inbox.json`);
-                
+
                 if (!fs.existsSync(inboxPath)) {
-                    const nextTask = messageQueue[worker].shift(); 
-                    fs.writeFileSync(inboxPath, JSON.stringify(nextTask, null, 4)); 
+                    const nextTask = messageQueue[worker].shift();
+                    fs.writeFileSync(inboxPath, JSON.stringify(nextTask, null, 4));
                     console.log(`✅ [QUEUE] Sent waiting task to ${worker.toUpperCase()}'s Inbox! (${messageQueue[worker].length} tasks remaining)`);
                 }
             }
         }
-
-    }, 2000); 
+    }, 2000);
 
     ipcMain.handle('get-existing-accounts', async () => {
         const accPath = path.join(__dirname, 'Accounts');
         if (!fs.existsSync(accPath)) return [];
         return fs.readdirSync(accPath, { withFileTypes: true })
-                 .filter(dirent => dirent.isDirectory())
-                 .map(dirent => dirent.name);
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
     });
 
     ipcMain.on('create-new-account', (event, accountName) => {
@@ -410,9 +401,7 @@ app.on('ready', () => {
 
     if (autoUpdater) {
         ipcMain.on('check-for-updates', () => {
-            try {
-                autoUpdater.checkForUpdates();
-            } catch (error) {
+            try { autoUpdater.checkForUpdates(); } catch (error) {
                 if (mainWindow) mainWindow.webContents.send('update-status', 'Error connecting to server.');
             }
         });
@@ -432,37 +421,56 @@ app.on('ready', () => {
     }
 });
 
+// ==========================================
+// 🔴 FLOW VIDEO ENGINE (SMART RESUME SUPPORT)
+// ==========================================
 let flowEngineProcess = null;
 
 ipcMain.on('start-flow-engine', (event, data) => {
-    // 🔴 FIX: UI থেকে browserName রিসিভ করা হচ্ছে
-    const { prompts, accountName, browserName } = data;
+    const { prompts, accountName, browserName, startIndex } = data;
     const enginePath = path.join(__dirname, 'AI_Workers', 'flow_engine.js');
 
     if (flowEngineProcess) {
-        try { flowEngineProcess.kill(); } catch(e){}
+        try { flowEngineProcess.kill(); } catch (e) { }
     }
 
     console.log(`🚀 Starting Flow Video Engine with Profile: ${accountName} on Browser: ${browserName || 'chrome'}`);
-    
-    // 🔴 FIX: ইঞ্জিনে browserName পাঠানো হচ্ছে
+
     flowEngineProcess = fork(enginePath, [accountName, browserName || 'chrome'], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
 
     flowEngineProcess.on('message', (msg) => {
         if (msg.type === 'console') {
-            sendToUIConsole(msg.logType, msg.text, 'flow'); 
+            sendToUIConsole(msg.logType, msg.text, 'flow');
         } else if (msg.type === 'status') {
             if (mainWindow && !mainWindow.isDestroyed()) {
-                mainWindow.webContents.send('flow-status', msg); 
+                mainWindow.webContents.send('flow-status', msg);
             }
         }
     });
 
-    flowEngineProcess.send({ type: 'start', prompts: prompts });
+    flowEngineProcess.send({ type: 'start', prompts: prompts, startIndex: startIndex || 0 });
 });
 
-ipcMain.on('resume-flow-engine', () => {
-    if (flowEngineProcess) flowEngineProcess.send({ type: 'resume' });
+ipcMain.on('pause-flow-engine', () => {
+    if (flowEngineProcess) flowEngineProcess.send({ type: 'pause' });
+});
+
+ipcMain.on('resume-flow-engine', (event, data) => {
+    if (flowEngineProcess) {
+        flowEngineProcess.send({ type: 'resume' });
+    } else if (data && data.prompts) {
+        const enginePath = path.join(__dirname, 'AI_Workers', 'flow_engine.js');
+        console.log(`🚀 Smart Resuming Flow Video Engine...`);
+
+        flowEngineProcess = fork(enginePath, [data.accountName, data.browserName || 'chrome'], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
+
+        flowEngineProcess.on('message', (msg) => {
+            if (msg.type === 'console') sendToUIConsole(msg.logType, msg.text, 'flow');
+            else if (msg.type === 'status' && mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('flow-status', msg);
+        });
+
+        flowEngineProcess.send({ type: 'start', prompts: data.prompts, startIndex: data.startIndex || 0 });
+    }
 });
 
 ipcMain.on('stop-flow-engine', () => {
@@ -472,37 +480,56 @@ ipcMain.on('stop-flow-engine', () => {
     }
 });
 
+// ==========================================
+// 🔴 GEMINI IMAGE ENGINE (SMART RESUME SUPPORT)
+// ==========================================
 let geminiImageEngineProcess = null;
 
 ipcMain.on('start-gemini-image-engine', (event, data) => {
-    // 🔴 FIX: UI থেকে browserName রিসিভ করা হচ্ছে
-    const { prompts, accountName, browserName } = data;
+    const { prompts, accountName, browserName, startIndex } = data;
     const enginePath = path.join(__dirname, 'AI_Workers', 'gemini_image_engine.js');
 
     if (geminiImageEngineProcess) {
-        try { geminiImageEngineProcess.kill(); } catch(e){}
+        try { geminiImageEngineProcess.kill(); } catch (e) { }
     }
 
     console.log(`🚀 Starting Gemini Image Engine with Profile: ${accountName} on Browser: ${browserName || 'chrome'}`);
-    
-    // 🔴 FIX: ইঞ্জিনে browserName পাঠানো হচ্ছে
+
     geminiImageEngineProcess = fork(enginePath, [accountName, browserName || 'chrome'], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
 
     geminiImageEngineProcess.on('message', (msg) => {
         if (msg.type === 'console') {
-            sendToUIConsole(msg.logType, msg.text, 'gemini'); 
+            sendToUIConsole(msg.logType, msg.text, 'gemini');
         } else if (msg.type === 'status') {
             if (mainWindow && !mainWindow.isDestroyed()) {
-                mainWindow.webContents.send('gemini-image-status', msg); 
+                mainWindow.webContents.send('gemini-image-status', msg);
             }
         }
     });
 
-    geminiImageEngineProcess.send({ type: 'start', prompts: prompts });
+    geminiImageEngineProcess.send({ type: 'start', prompts: prompts, startIndex: startIndex || 0 });
 });
 
-ipcMain.on('resume-gemini-image-engine', () => {
-    if (geminiImageEngineProcess) geminiImageEngineProcess.send({ type: 'resume' });
+ipcMain.on('pause-gemini-image-engine', () => {
+    if (geminiImageEngineProcess) geminiImageEngineProcess.send({ type: 'pause' });
+});
+
+ipcMain.on('resume-gemini-image-engine', (event, data) => {
+    if (geminiImageEngineProcess) {
+        geminiImageEngineProcess.send({ type: 'resume' });
+    } else if (data && data.prompts) {
+        const enginePath = path.join(__dirname, 'AI_Workers', 'gemini_image_engine.js');
+        console.log(`🚀 Smart Resuming Gemini Image Engine...`);
+
+        geminiImageEngineProcess = fork(enginePath, [data.accountName, data.browserName || 'chrome'], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
+
+        geminiImageEngineProcess.on('message', (msg) => {
+            if (msg.type === 'console') sendToUIConsole(msg.logType, msg.text, 'gemini');
+            else if (msg.type === 'status' && mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('gemini-image-status', msg);
+        });
+
+        geminiImageEngineProcess.send({ type: 'start', prompts: data.prompts, startIndex: data.startIndex || 0 });
+    }
 });
 
 ipcMain.on('stop-gemini-image-engine', () => {
@@ -512,15 +539,170 @@ ipcMain.on('stop-gemini-image-engine', () => {
     }
 });
 
+// ==========================================
+// 🎥 MEDIA STUDIO REAL FFMPEG ENGINE (HIDDEN + SMART CHECK + COLORFUL LOGS)
+// ==========================================
+let activeFfmpegProcess = null;
+
+ipcMain.on('run-media-studio-ffmpeg', (event, data) => {
+    const { jobId, command, outputFolder } = data;
+
+    // ১. প্রথমে চেক করবো পিসিতে FFmpeg ইন্সটল করা আছে কি না
+    exec('ffmpeg -version', (error, stdout, stderr) => {
+        if (error) {
+            console.log("⚠️ [MEDIA STUDIO] FFmpeg not found!");
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('ms-ffmpeg-missing', { jobId });
+            }
+            return;
+        }
+
+        if (!fs.existsSync(outputFolder)) {
+            try { fs.mkdirSync(outputFolder, { recursive: true }); } catch (e) {}
+        }
+
+        // 🔴 100% BULLETPROOF FIX: Auto-Overwrite (-y), No-Stdin (-nostdin)
+        let finalCommand = command;
+        if (finalCommand.startsWith('ffmpeg')) {
+            if (!finalCommand.includes('-y ')) finalCommand = finalCommand.replace('ffmpeg', 'ffmpeg -y');
+            if (!finalCommand.includes('-nostdin')) finalCommand = finalCommand.replace('ffmpeg', 'ffmpeg -nostdin');
+        }
+
+        console.log(`[MEDIA STUDIO] 🚀 Executing Command for Job #${jobId}: ${finalCommand}`);
+
+        // spawn + shell:true ব্যবহার করলে স্ট্রিমিং ও স্পেস (Space) দুটোই নিখুঁতভাবে কাজ করবে
+        activeFfmpegProcess = spawn(finalCommand, {
+            cwd: outputFolder,
+            shell: true,
+            windowsHide: true
+        });
+
+        // 🔴 থ্রটল টাইমার (যাতে প্রতি সেকেন্ডে কনসোল স্প্যাম না হয়)
+        let lastConsoleLogTime = 0;
+
+        // FFmpeg এর লাইভ প্রগ্রেস ডেটা রিসিভ করা এবং মানুষের ভাষায় রূপান্তর করা
+        activeFfmpegProcess.stderr.on('data', (buffer) => {
+            const output = buffer.toString();
+
+            // ডেটা এক্সট্র্যাক্ট করা
+            const timeMatch = output.match(/time=(\d{2}:\d{2}:\d{2})/); // দশমিক বাদ দিয়ে শুধু সময়
+            const fpsMatch = output.match(/fps=\s*(\d+)/);
+            const speedMatch = output.match(/speed=\s*([\d\.]+)x/);
+
+            // ১. UI এর প্রগ্রেস বার আপডেট করার জন্য ডেটা পাঠানো (এটি ব্যাকগ্রাউন্ডে চলতে থাকবে)
+            if (timeMatch || fpsMatch) {
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('ms-job-progress', {
+                        jobId: jobId,
+                        time: timeMatch ? timeMatch[1] : null,
+                        fps: fpsMatch ? fpsMatch[1] : null,
+                        speed: speedMatch ? speedMatch[1] : null
+                    });
+                }
+            }
+
+            // ২. কনসোলের জন্য মানুষের ভাষায় সুন্দর মেসেজ তৈরি করা (প্রতি ৩ সেকেন্ডে ১ বার দেখাবে)
+            const now = Date.now();
+            if (output.includes('frame=') && (now - lastConsoleLogTime > 3000)) {
+                lastConsoleLogTime = now;
+                
+                let readableText = `<span style="color: var(--text-secondary);">⚙️ Processing video media...</span>`;
+                
+                if (timeMatch && speedMatch) {
+                    // 🔴 কালারফুল আউটপুট: আইকন, টেক্সট, সময় এবং স্পিড আলাদা আলাদা কালারে দেখানো হলো
+                    readableText = `<span style="color: var(--accent-primary);">⚙️ Rendering in progress...</span> ` +
+                                   `<span style="color: var(--text-tertiary);">|</span> ` +
+                                   `<span style="color: var(--color-success);">Time: <b style="color: #fff;">${timeMatch[1]}</b></span> ` +
+                                   `<span style="color: var(--text-tertiary);">|</span> ` +
+                                   `<span style="color: var(--color-warning);">Speed: <b style="color: #fff;">${speedMatch[1]}x</b></span>`;
+                }
+                
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('ms-console-log', { type: 'progress', text: readableText });
+                }
+            } 
+            // ৩. যদি আসলেই কোনো এরর হয়, শুধু তখনই সেটা কনসোলে লাল রঙে দেখাবে
+            else if (output.toLowerCase().includes('error')) {
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('ms-console-log', { type: 'error', text: "⚠️ Engine Notice: " + output.trim() });
+                }
+            }
+        });
+
+        activeFfmpegProcess.stdout.on('data', (buffer) => {
+            // Stdout is generally empty for FFmpeg unless specifically requested, kept for safety.
+        });
+
+        activeFfmpegProcess.on('close', (code) => {
+            const isSuccess = code === 0;
+            console.log(`[MEDIA STUDIO] Job #${jobId} Finished with Code ${code}`);
+
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('ms-job-complete', {
+                    jobId: jobId,
+                    success: isSuccess,
+                    code: code
+                });
+            }
+            activeFfmpegProcess = null;
+        });
+
+        activeFfmpegProcess.on('error', (err) => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('ms-job-complete', {
+                    jobId: jobId,
+                    success: false,
+                    error: err.message
+                });
+            }
+            activeFfmpegProcess = null;
+        });
+    });
+});
+
+ipcMain.on('stop-media-studio-ffmpeg', () => {
+    try { 
+        // 🔴 আল্টিমেট কিল সুইচ: কম্পিউটারে চলা যেকোনো হিডেন FFmpeg প্রসেসকে চিরতরে মুছে ফেলবে!
+        exec('taskkill /IM ffmpeg.exe /F /T'); 
+    } catch (e) {}
+    activeFfmpegProcess = null;
+    console.log("🛑 Media Studio FFmpeg Process Force Killed!");
+});
+
+// ==========================================
+// 📁 NATIVE OS FILE & FOLDER PICKER
+// ==========================================
+ipcMain.handle('dialog:openFiles', async () => {
+    if (!mainWindow) return [];
+    const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openFile', 'multiSelections'],
+        title: 'Select Media Files',
+        filters: [
+            { name: 'Media Files', extensions: ['mp4', 'mkv', 'avi', 'mov', 'mp3', 'wav', 'aac', 'png', 'jpg', 'jpeg', 'gif'] },
+            { name: 'All Files', extensions: ['*'] }
+        ]
+    });
+    return result.filePaths; // ফাইলের একদম আসল লোকেশন রিটার্ন করবে
+});
+
+ipcMain.handle('dialog:openFolder', async () => {
+    if (!mainWindow) return [];
+    const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory'],
+        title: 'Select Output Folder'
+    });
+    return result.filePaths;
+});
+
 app.on('window-all-closed', () => {
     for (let id in activeEngines) {
         if (activeEngines[id]) {
-            try { activeEngines[id].process.send('shutdown'); } catch(e){}
-            setTimeout(() => { try { activeEngines[id].process.kill(); } catch(e){} }, 2000);
+            try { activeEngines[id].process.send('shutdown'); } catch (e) { }
+            setTimeout(() => { try { activeEngines[id].process.kill(); } catch (e) { } }, 2000);
         }
     }
     setTimeout(() => {
-        for (let acc in activeBrowsers) { try { activeBrowsers[acc].process.kill(); } catch(e){} }
+        for (let acc in activeBrowsers) { try { activeBrowsers[acc].process.kill(); } catch (e) { } }
         if (process.platform !== 'darwin') app.quit();
     }, 2500);
 });

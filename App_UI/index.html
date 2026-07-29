@@ -636,6 +636,9 @@
       backdrop-filter: blur(var(--glass-subtle-blur));
       -webkit-backdrop-filter: blur(var(--glass-subtle-blur));
       border-bottom: 1px solid var(--border-subtle);
+      /* 🔴 FIX: Topbar যেন অন্য কিছুর সাথে কনফ্লিক্ট না করে তাই z-index দেওয়া হলো */
+      position: relative;
+      z-index: 9999;
     }
 
     .page-title {
@@ -890,15 +893,16 @@
       }
     }
 
-    /* ---- Hero atmosphere (shared) ---- */
     .hero {
       position: relative;
-      padding: var(--space-8) 0 var(--space-7);
+      /* 🔴 FIX: উপরের বিশাল ফাঁকা জায়গা কমানোর জন্য padding কমানো হলো */
+      padding: var(--space-4) 0 var(--space-7);
       overflow: hidden;
     }
 
     .page-workspace .hero {
-      padding: var(--space-7) 0 var(--space-7);
+      /* 🔴 FIX: AI Workspace-এর উপরের ফাঁকা জায়গাও কমানো হলো */
+      padding: var(--space-4) 0 var(--space-7);
     }
 
     .ambient-glow {
@@ -1504,7 +1508,8 @@
 
     .modules-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
+      /* 🔴 FIX: ৪টি কার্ড পাশাপাশি বসানোর জন্য */
       gap: var(--space-5);
     }
 
@@ -1686,9 +1691,10 @@
     .editor-gutter {
       width: 44px;
       flex-shrink: 0;
-      padding: var(--space-4) 0;
+      /* 🔴 FIX: Textarea-এর 8px স্ক্রলবারের সাথে ব্যালেন্স করার জন্য নিচে 24px (16+8) দেওয়া হলো */
+      padding: 16px 0 24px 0;
       text-align: right;
-      padding-right: var(--space-3);
+      padding-right: 12px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 12px;
       line-height: 22px;
@@ -1706,11 +1712,15 @@
       border: none;
       outline: none;
       background: none;
-      padding: var(--space-4);
+      padding: 16px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 13px;
       line-height: 22px;
       color: var(--text-primary);
+      /* 🔴 FIX: Java Editor Style */
+      white-space: pre;
+      overflow-wrap: normal;
+      overflow-x: auto;
     }
 
     .editor-textarea::placeholder {
@@ -3409,6 +3419,25 @@
       }
     }
   </style>
+  <!-- 🔴 FINAL PERFECT FIX: Removing the invisible wrapper gap safely -->
+  <style>
+    /* মেইন র‍্যাপারের লুকানো টপ-প্যাডিং জিরো করে দেওয়া হলো */
+    .content-inner {
+      padding-top: 0 !important;
+    }
+
+    /* অন্য পেজগুলোর (Flow, Gemini, Media) ডিজাইন যেন নষ্ট না হয়, তাই তাদের হেডারে প্যাডিং দেওয়া হলো */
+    .page-header {
+      padding-top: 32px !important;
+    }
+
+    /* Dashboard এবং AI Workspace-এর হিরো সেকশনে পারফেক্ট ব্যালেন্সড স্পেস */
+    .hero,
+    .page-workspace .hero {
+      padding-top: 24px !important;
+      margin-top: 0 !important;
+    }
+  </style>
 </head>
 
 <body>
@@ -3542,6 +3571,16 @@
               </svg></span>
             <span class="nav-label">Flow Videos</span>
           </a>
+          <a class="nav-item material-react" href="#" onclick="switchPage('page-media-studio', this); return false;"
+            data-tooltip="Media Studio">
+            <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2.5" y="4.5" width="19" height="13" rx="2" />
+                <path d="M8 21h8M12 17.5V21" />
+                <path d="M9.5 8l4 2.5-4 2.5V8z" />
+              </svg></span>
+            <span class="nav-label">Media Studio</span>
+          </a>
           <a class="nav-item material-react" href="#" onclick="switchPage('page-workspace', this); return false;"
             data-tooltip="AI Workspace">
             <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
@@ -3643,7 +3682,7 @@
                   <path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8z" />
                   <path d="M9.5 17a2.5 2.5 0 0 0 5 0" />
                 </svg>
-                <span class="badge-dot" id="mainNotifBadge"></span>
+                <span class="badge-dot" id="mainNotifBadge" style="display: none;"></span>
               </button>
 
               <div class="popover popover--down" id="notifPopover"
@@ -3679,7 +3718,6 @@
                     background: var(--bg-elevated) !important;
                   }
 
-                  /* Preview Line */
                   .notif-preview {
                     font-size: 12px;
                     color: var(--text-tertiary);
@@ -3691,14 +3729,12 @@
                     margin-top: 4px;
                   }
 
-                  /* Full Body (Controlled by JS) */
                   .notif-full-body {
                     font-size: 12px;
                     color: var(--text-tertiary);
                     line-height: 1.6;
                   }
 
-                  /* Unread Dot */
                   .notif-unread-dot {
                     position: absolute;
                     top: -2px;
@@ -3712,99 +3748,10 @@
                   }
                 </style>
 
-                <div style="overflow-y: auto; display: flex; flex-direction: column; flex: 1;">
-
-                  <div class="notif-item unread" style="background: rgba(0, 198, 255, 0.06);">
-                    <div style="position: relative;">
-                      <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; display: flex; align-items: center; justify-content: center;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                          style="width: 20px; height: 20px;">
-                          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                        </svg>
-                      </div>
-                      <div class="notif-unread-dot"></div>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                      <div
-                        style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-                        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: #00c6ff;">System Update</h4>
-                        <span style="font-size: 11px; color: #00c6ff; font-weight: 500;">Just now</span>
-                      </div>
-                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 600; color: var(--text-primary);">Creator
-                        Engine Pro v1.0.1 is Live! ✨</h5>
-                      <div class="notif-preview">Multi-browser core (Super 7) and advanced stealth error handling are
-                        now active...</div>
-                      <div class="notif-full-body">
-                        <strong>What's new in this major release:</strong><br><br>
-                        • <strong>Super 7 Browsers:</strong> Added full automated integration for Chrome, Edge, Brave,
-                        Opera, Vivaldi, Firefox, and Tor Browser.<br><br>
-                        • <strong>Universal Extractor:</strong> Implemented a 3-Tier fallback logic to completely
-                        eliminate "Extraction Failed" bugs across all AI engines. Tables, lists, and code blocks now
-                        format perfectly.<br><br>
-                        • <strong>Premium UI:</strong> 3D Cyberpunk consoles, animated HOT/PRO badges, and interactive
-                        UX upgrades applied globally.
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="notif-item unread" style="background: rgba(201, 154, 91, 0.08);">
-                    <div style="position: relative;">
-                      <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-primary); color: var(--bg-void); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
-                        AR</div>
-                      <div class="notif-unread-dot"></div>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                      <div
-                        style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-                        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--text-primary);">Atawur
-                          Rahman</h4>
-                        <span style="font-size: 11px; color: var(--accent-primary); font-weight: 500;">5m ago</span>
-                      </div>
-                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 600; color: var(--text-primary);">Welcome to
-                        Creator Engine Pro! 🚀</h5>
-                      <div class="notif-preview">Hello! I'm a student at Barishal Polytechnic Institute (BPI). As a
-                        student...</div>
-                      <div class="notif-full-body">
-                        Hello! I'm a student at <strong>Barishal Polytechnic Institute (BPI)</strong>. As a student, I
-                        constantly try to bring my imagination to reality. I have spent many sleepless nights coding and
-                        building this software for you to make your workflow easier. Thank you for being a part of this
-                        journey. Enjoy creating!
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="notif-item read" style="background: transparent;">
-                    <div style="position: relative;">
-                      <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-tertiary); display: flex; align-items: center; justify-content: center;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                          style="width: 20px; height: 20px;">
-                          <rect x="3" y="3" width="18" height="18" rx="2" />
-                          <path d="M9 3v18" />
-                          <path d="M15 3v18" />
-                        </svg>
-                      </div>
-                      <div class="notif-unread-dot" style="opacity: 0; transform: scale(0);"></div>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                      <div
-                        style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
-                        <h4 style="margin: 0; font-size: 13px; font-weight: 500; color: var(--text-secondary);">System
-                          Updates</h4>
-                        <span style="font-size: 11px; color: var(--text-tertiary);">2 hrs ago</span>
-                      </div>
-                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 500; color: var(--text-secondary);">AI
-                        Workspace Initialized</h5>
-                      <div class="notif-preview">Your environment is ready. You can now start adding prompts...</div>
-                      <div class="notif-full-body">
-                        Your environment is ready. You can now start adding prompts and automate your tasks smoothly.
-                        All AI nodes are waiting for dispatch signals from the orchestrator.
-                      </div>
-                    </div>
-                  </div>
-
+                <!-- 🔴 DYNAMIC LIST CONTAINER -->
+                <div id="dynamicNotificationList"
+                  style="overflow-y: auto; display: flex; flex-direction: column; flex: 1;">
+                  <!-- JS automatically will load notifications here -->
                 </div>
 
                 <div
@@ -3845,7 +3792,7 @@
                     every creative tool, working as one.</p>
                   <div class="hero-actions">
                     <a class="btn btn--primary material-react" href="#"
-                      onclick="switchPage('page-workspace', document.querySelector('.sidebar-nav a:nth-child(4)')); return false;">
+                      onclick="switchPage('page-workspace', document.querySelector('.sidebar-nav a:nth-child(5)')); return false;">
                       <span>Open AI Workspace</span>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -3875,7 +3822,7 @@
                 </p>
                 <div class="quick-actions-row">
                   <button class="btn btn--secondary"
-                    onclick="switchPage('page-workspace', document.querySelector('.sidebar-nav a:nth-child(4)'))"><svg
+                    onclick="switchPage('page-workspace', document.querySelector('.sidebar-nav a:nth-child(5)'))"><svg
                       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
                       stroke-linejoin="round">
                       <circle cx="12" cy="5" r="2" />
@@ -3899,7 +3846,7 @@
                       <path d="M10 8l6 4-6 4V8z" />
                     </svg>Generate Video</button>
                   <button class="btn btn--secondary"
-                    onclick="switchPage('page-workspace', document.querySelector('.sidebar-nav a:nth-child(4)'))"><svg
+                    onclick="switchPage('page-workspace', document.querySelector('.sidebar-nav a:nth-child(5)'))"><svg
                       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
                       stroke-linejoin="round">
                       <circle cx="5" cy="6" r="2" />
@@ -3963,7 +3910,8 @@
                 <div class="section-header">
                   <h2 class="text-subheading">Continue where you left off</h2>
                 </div>
-                <div class="modules-grid">
+                <!-- 🔴 4-Column Grid Applied Here -->
+                <div class="modules-grid" style="grid-template-columns: repeat(4, 1fr);">
                   <a class="module-card material-react tilt" href="#"
                     onclick="switchPage('page-gemini', document.querySelector('.sidebar-nav a:nth-child(2)')); return false;">
                     <div class="module-icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -3980,6 +3928,7 @@
                         <path d="M13 6l6 6-6 6" />
                       </svg></div>
                   </a>
+
                   <a class="module-card material-react tilt" href="#"
                     onclick="switchPage('page-flow', document.querySelector('.sidebar-nav a:nth-child(3)')); return false;">
                     <div class="module-icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -3995,8 +3944,29 @@
                         <path d="M13 6l6 6-6 6" />
                       </svg></div>
                   </a>
+
+                  <!-- 🔴 NEW CARD: Media Studio -->
                   <a class="module-card material-react tilt" href="#"
-                    onclick="switchPage('page-workspace', document.querySelector('.sidebar-nav a:nth-child(4)')); return false;">
+                    onclick="switchPage('page-media-studio', document.querySelector('.sidebar-nav a:nth-child(4)')); return false;">
+                    <div class="module-icon-chip">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2.5" y="4.5" width="19" height="13" rx="2" />
+                        <path d="M8 21h8M12 17.5V21" />
+                        <path d="M9.5 8l4 2.5-4 2.5V8z" />
+                      </svg>
+                    </div>
+                    <h3 class="module-title">Media Studio</h3>
+                    <p class="module-desc">Pick your files, choose operations, and run FFmpeg easily.</p>
+                    <div class="module-footer">Open<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="M13 6l6 6-6 6" />
+                      </svg></div>
+                  </a>
+
+                  <a class="module-card material-react tilt" href="#"
+                    onclick="switchPage('page-workspace', document.querySelector('.sidebar-nav a:nth-child(5)')); return false;">
                     <div class="module-icon-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="5" r="2" />
@@ -4144,6 +4114,9 @@
                 .gemini-gutter {
                   transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
                   min-height: 100%;
+                  /* এই দুটো লাইন যুক্ত করুন */
+                  font-size: 13.5px !important;
+                  line-height: 1.7 !important;
                 }
 
                 .gemini-textarea {
@@ -4595,9 +4568,13 @@
                   min-height: 460px;
                 }
 
+
                 .premium-gutter {
                   transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
                   min-height: 100%;
+                  /* এই দুটো লাইন যুক্ত করুন */
+                  font-size: 13.5px !important;
+                  line-height: 1.7 !important;
                 }
 
                 .premium-textarea {
@@ -4959,6 +4936,2748 @@
               });
               setTimeout(updateFlowAccountDropdown, 1000);
             </script>
+
+            <!-- ========================================================================== -->
+            <!-- PAGE: MEDIA STUDIO                                                         -->
+            <!-- ========================================================================== -->
+            <div id="page-media-studio" class="app-page" style="display: none;">
+              <style>
+                /* ==========================================================================
+                   MEDIA STUDIO — integration additions only.
+                   Everything below either (a) defines brand-new class names that don't
+                   exist anywhere else in the app, so it's safe as a normal rule, or
+                   (b) is explicitly scoped under #page-media-studio so it can never
+                   affect Gemini Images / Flow Videos / Dashboard, which already rely on
+                   the unmodified versions of these shared classes.
+                   ========================================================================== */
+
+                /* ---- scoped design-token addition (kept off :root on purpose) ---- */
+                #page-media-studio {
+                  --ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+                }
+
+                /* ---- scoped layout overrides for the pages this page reuses verbatim ---- */
+                #page-media-studio .editor-body {
+                  display: flex;
+                  flex-direction: column;
+                  height: auto;
+                  min-height: 460px;
+                  padding: var(--space-5);
+                  gap: var(--space-5);
+                }
+
+                #page-media-studio .runtime-grid {
+                  grid-template-columns: 1fr 392px;
+                }
+
+                #page-media-studio .lower-grid {
+                  grid-template-columns: 1fr 1fr;
+                  align-items: stretch;
+                }
+
+                #page-media-studio .progress-fill {
+                  position: relative;
+                  overflow: hidden;
+                }
+
+                #page-media-studio .progress-track {
+                  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
+                }
+
+                #page-media-studio .console-line {
+                  transition: background var(--duration-micro) var(--ease-standard);
+                }
+
+                #page-media-studio .console-line:hover {
+                  background: rgba(255, 255, 255, 0.02);
+                }
+
+                /* Fixes a pre-existing bug where the app-wide focus ring forces every
+                   focused element's border-radius to 6px, squaring off round controls
+                   (toggles, pill buttons). Scoped here so only Media Studio's own round
+                   controls get a correctly-shaped ring; left untouched everywhere else. */
+                #page-media-studio :focus-visible {
+                  outline: 2px solid var(--accent-primary);
+                  outline-offset: 2px;
+                }
+
+                /* ---- status-pill additions (new state variants + running dot) ---- */
+                #page-media-studio .status-pill::before {
+                  content: '';
+                  display: inline-block;
+                  width: 5px;
+                  height: 5px;
+                  border-radius: var(--radius-full);
+                  background: currentColor;
+                  margin-right: 5px;
+                  vertical-align: middle;
+                }
+
+                #page-media-studio .status-pill.running {
+                  color: var(--color-info);
+                  background: rgba(111, 147, 201, 0.12);
+                }
+
+                #page-media-studio .status-pill.waiting {
+                  color: var(--color-warning);
+                  background: rgba(208, 139, 62, 0.12);
+                }
+
+                #page-media-studio .status-pill.failed {
+                  color: var(--color-error);
+                  background: rgba(225, 104, 95, 0.12);
+                }
+
+                #page-media-studio .status-pill.completed {
+                  color: var(--color-success);
+                  background: rgba(111, 174, 140, 0.12);
+                }
+
+                #page-media-studio .status-pill.running::before {
+                  animation: msPulseDot 1.3s var(--ease-standard) infinite;
+                }
+
+                /* ---- new keyframes (uniquely named — zero collision risk) ---- */
+                @keyframes msPulseDot {
+
+                  0%,
+                  100% {
+                    opacity: 1;
+                    transform: scale(1);
+                  }
+
+                  50% {
+                    opacity: 0.5;
+                    transform: scale(1.2);
+                  }
+                }
+
+                @keyframes shimmerSweep {
+                  0% {
+                    background-position: -80px 0;
+                  }
+
+                  100% {
+                    background-position: 160px 0;
+                  }
+                }
+
+                @keyframes btnSpin {
+                  to {
+                    transform: rotate(360deg);
+                  }
+                }
+
+                @keyframes opCardSelect {
+                  0% {
+                    transform: scale(0.95);
+                  }
+
+                  100% {
+                    transform: scale(1);
+                  }
+                }
+
+                @keyframes msFormIn {
+                  from {
+                    opacity: 0;
+                    transform: translateY(5px);
+                  }
+
+                  to {
+                    opacity: 1;
+                    transform: translateY(0);
+                  }
+                }
+
+                /* ---- Run Now loading state ---- */
+                .btn.is-loading {
+                  opacity: 0.88;
+                  pointer-events: none;
+                }
+
+                .btn-spinner {
+                  animation: btnSpin 0.7s linear infinite;
+                }
+
+                /* ---- Batch Queue / PowerShell Output shell (new component family) ---- */
+                .ms-shell-panel {
+                  display: flex;
+                  flex-direction: column;
+                  height: 356px;
+                  background: var(--bg-surface);
+                  border: 1px solid var(--border-subtle);
+                  border-radius: var(--radius-md);
+                  box-shadow: var(--elevation-2), inset 0 1px 0 var(--border-subtle);
+                  overflow: hidden;
+                  min-height: 0;
+                }
+
+                .ms-shell-head {
+                  flex-shrink: 0;
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: var(--space-3);
+                  height: 48px;
+                  padding: 0 var(--space-4) 0 var(--space-5);
+                  border-bottom: 1px solid var(--border-subtle);
+                  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent);
+                }
+
+                .ms-shell-head-left {
+                  display: flex;
+                  align-items: center;
+                  gap: 9px;
+                  min-width: 0;
+                }
+
+                .ms-shell-head-icon {
+                  width: 22px;
+                  height: 22px;
+                  border-radius: 6px;
+                  background: var(--bg-elevated);
+                  border: 1px solid var(--border-subtle);
+                  color: var(--text-tertiary);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                }
+
+                .ms-shell-head-icon svg {
+                  width: 12px;
+                  height: 12px;
+                }
+
+                .ms-shell-title {
+                  font-size: 12.5px;
+                  font-weight: 600;
+                  color: var(--text-primary);
+                  letter-spacing: 0.01em;
+                }
+
+                .ms-shell-head-actions {
+                  display: flex;
+                  align-items: center;
+                  gap: var(--space-1);
+                  flex-shrink: 0;
+                }
+
+                .ms-shell-head-actions .btn--tertiary {
+                  font-size: 11.5px;
+                  padding: 4px 8px;
+                  border-radius: 6px;
+                }
+
+                .ms-shell-head-actions .btn--tertiary:hover {
+                  background: var(--border-subtle);
+                }
+
+                .ms-shell-body {
+                  flex: 1;
+                  min-height: 0;
+                  overflow-y: auto;
+                  overflow-anchor: none;
+                  position: relative;
+                }
+
+                .ms-shell-body--console {
+                  background: var(--bg-void);
+                  font-family: 'JetBrains Mono', 'Cascadia Code', 'Segoe UI Mono', Consolas, monospace;
+                }
+
+                .ms-queue-row {
+                  position: relative;
+                  display: flex;
+                  align-items: center;
+                  gap: var(--space-3);
+                  padding: 11px var(--space-4) 11px 19px;
+                  border-bottom: 1px solid var(--border-subtle);
+                  transition: background var(--duration-micro) var(--ease-standard);
+                }
+
+                .ms-queue-row::before {
+                  content: '';
+                  position: absolute;
+                  left: 0;
+                  top: 6px;
+                  bottom: 6px;
+                  width: 3px;
+                  border-radius: var(--radius-full);
+                  background: var(--border-strong);
+                }
+
+                .ms-queue-row[data-status="running"]::before {
+                  background: var(--color-info);
+                  box-shadow: 0 0 6px var(--color-info);
+                  animation: msPulseDot 1.6s var(--ease-standard) infinite;
+                }
+
+                .ms-queue-row[data-status="waiting"]::before {
+                  background: var(--color-warning);
+                }
+
+                .ms-queue-row[data-status="completed"]::before {
+                  background: var(--color-success);
+                }
+
+                .ms-queue-row[data-status="failed"]::before {
+                  background: var(--color-error);
+                }
+
+                .ms-queue-row:last-child {
+                  border-bottom: none;
+                }
+
+                .ms-queue-row:hover {
+                  background: var(--bg-elevated);
+                }
+
+                .ms-queue-row-icon {
+                  width: 32px;
+                  height: 32px;
+                  border-radius: 8px;
+                  background: var(--bg-elevated);
+                  border: 1px solid var(--border-subtle);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: var(--text-tertiary);
+                  flex-shrink: 0;
+                }
+
+                .ms-queue-row-icon svg {
+                  width: 14px;
+                  height: 14px;
+                }
+
+                .ms-queue-row-main {
+                  flex: 0 0 34%;
+                  min-width: 0;
+                }
+
+                .ms-queue-row-name {
+                  font-size: 12.5px;
+                  font-weight: 500;
+                  color: var(--text-primary);
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                }
+
+                .ms-queue-row-sub {
+                  font-size: 11px;
+                  color: var(--text-tertiary);
+                  margin-top: 2px;
+                }
+
+                .ms-queue-row-progress {
+                  flex: 1;
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  min-width: 0;
+                }
+
+                .ms-queue-row-progress .progress-track {
+                  flex: 1;
+                }
+
+                .ms-queue-row-pct {
+                  font-size: 11px;
+                  color: var(--text-tertiary);
+                  min-width: 30px;
+                  text-align: right;
+                  font-variant-numeric: tabular-nums;
+                  flex-shrink: 0;
+                }
+
+                .ms-queue-row-actions {
+                  display: flex;
+                  align-items: center;
+                  gap: 2px;
+                  flex-shrink: 0;
+                }
+
+                .ms-queue-row-btn {
+                  width: 26px;
+                  height: 26px;
+                  border-radius: 6px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: var(--text-tertiary);
+                  transition: background var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard);
+                }
+
+                .ms-queue-row-btn:hover {
+                  background: var(--border-subtle);
+                  color: var(--text-primary);
+                }
+
+                .ms-queue-row-btn svg {
+                  width: 13px;
+                  height: 13px;
+                }
+
+                .ms-queue-empty-row {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  height: 100%;
+                  gap: var(--space-2);
+                  color: var(--text-disabled);
+                  font-size: 12.5px;
+                  text-align: center;
+                  padding: var(--space-5);
+                }
+
+                .ms-queue-empty-row svg {
+                  width: 26px;
+                  height: 26px;
+                  opacity: 0.5;
+                }
+
+                .ms-queue-row[data-status="running"] .progress-fill::after {
+                  content: '';
+                  position: absolute;
+                  inset: 0;
+                  background-image: linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.32) 45%, transparent 65%);
+                  background-size: 60px 100%;
+                  animation: shimmerSweep 1.6s linear infinite;
+                }
+
+                .ms-console-prompt {
+                  position: sticky;
+                  bottom: 0;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  padding: 8px var(--space-5);
+                  background: var(--bg-void);
+                  border-top: 1px solid var(--border-subtle);
+                  font-size: 12px;
+                  color: var(--text-tertiary);
+                }
+
+                .ms-console-cursor {
+                  display: inline-block;
+                  width: 6px;
+                  height: 13px;
+                  background: var(--accent-primary);
+                  animation: msPulseDot 1s steps(2, start) infinite;
+                }
+
+                /*==========================================================================
+                   MEDIA STUDIO — minimal FFmpeg command-builder frontend
+                   Reuses page-header / editor-panel / control-panel / control-card /
+                   console-panel / list-panel / activity-row / status-pill / progress-block
+                   verbatim from the shared stylesheet. Below are the few additions needed
+                   for operation pickers and compact form fields.
+                   ========================================================================== */
+
+
+
+                /* ---- Category tabs (Video / Audio / Image) ---- */
+                .ms-cat-tabs {
+                  position: relative;
+                  display: flex;
+                  align-items: center;
+                  gap: 2px;
+                  padding: 3px;
+                  background: var(--bg-void);
+                  border: 1px solid var(--border-subtle);
+                  border-radius: var(--radius-sm);
+                  flex-shrink: 0;
+                }
+
+                .ms-cat-tabs-indicator {
+                  position: absolute;
+                  top: 3px;
+                  bottom: 3px;
+                  left: 0;
+                  width: 0;
+                  border-radius: 7px;
+                  background: var(--accent-primary);
+                  transition: left 340ms var(--ease-standard), width 340ms var(--ease-standard);
+                  z-index: 0;
+                  will-change: left, width;
+                }
+
+                .ms-cat-tab {
+                  position: relative;
+                  z-index: 1;
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  height: 28px;
+                  padding: 0 var(--space-3);
+                  border-radius: 7px;
+                  font-size: 12px;
+                  font-weight: 500;
+                  color: var(--text-secondary);
+                  transition: color 200ms var(--ease-standard);
+                  white-space: nowrap;
+                }
+
+                .ms-cat-tab svg {
+                  width: 13px;
+                  height: 13px;
+                  flex-shrink: 0;
+                  transition: transform var(--duration-standard) var(--ease-spring);
+                }
+
+                .ms-cat-tab:hover svg {
+                  transform: scale(1.1);
+                }
+
+                .ms-cat-tab:hover {
+                  color: var(--text-primary);
+                }
+
+                .ms-cat-tab.active {
+                  color: var(--bg-void);
+                }
+
+                /* ---- Operation picker — large premium cards (center panel) ---- */
+                .ms-op-grid {
+                  display: grid;
+                  grid-template-columns: repeat(4, 1fr);
+                  gap: 10px;
+                }
+
+                .ms-op-card {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 10px;
+                  padding: 18px 10px;
+                  border-radius: var(--radius-md);
+                  background: var(--bg-void);
+                  border: 1px solid var(--border-subtle);
+                  color: var(--text-secondary);
+                  transition: background var(--duration-standard) var(--ease-standard), border-color var(--duration-standard) var(--ease-standard), color var(--duration-standard) var(--ease-standard), transform var(--duration-standard) var(--ease-standard), box-shadow var(--duration-standard) var(--ease-standard);
+                }
+
+                .ms-op-card:hover {
+                  background: var(--bg-elevated);
+                  border-color: var(--border-strong);
+                  color: var(--text-primary);
+                  transform: translateY(-2px);
+                  box-shadow: var(--elevation-1);
+                }
+
+                .ms-op-card:active {
+                  transform: translateY(-1px) scale(0.97);
+                  transition-duration: var(--duration-micro);
+                }
+
+                .ms-op-card.active {
+                  background: var(--accent-primary-muted);
+                  border-color: var(--accent-primary);
+                  color: var(--accent-primary);
+                  box-shadow: 0 0 0 1px var(--accent-primary), var(--elevation-1);
+                }
+
+                .ms-op-card.just-selected {
+                  animation: opCardSelect 360ms var(--ease-spring);
+                }
+
+                @keyframes opCardSelect {
+                  0% {
+                    transform: scale(0.95);
+                  }
+
+                  100% {
+                    transform: scale(1);
+                  }
+                }
+
+                .ms-op-card-icon {
+                  width: 38px;
+                  height: 38px;
+                  border-radius: var(--radius-sm);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  background: var(--bg-elevated);
+                  color: var(--text-secondary);
+                  transition: background var(--duration-standard) var(--ease-standard), color var(--duration-standard) var(--ease-standard), transform var(--duration-standard) var(--ease-spring);
+                }
+
+                .ms-op-card:hover .ms-op-card-icon {
+                  background: var(--border-subtle);
+                  color: var(--text-primary);
+                }
+
+                .ms-op-card.active .ms-op-card-icon {
+                  background: var(--bg-void);
+                  color: var(--accent-primary);
+                }
+
+                .ms-op-card.just-selected .ms-op-card-icon {
+                  transform: scale(1.14);
+                }
+
+                .ms-op-card-icon svg {
+                  width: 18px;
+                  height: 18px;
+                }
+
+                .ms-op-card-label {
+                  font-size: 12.5px;
+                  font-weight: 500;
+                  text-align: center;
+                  line-height: 15px;
+                  color: inherit;
+                }
+
+                @media (max-width: 1500px) {
+                  .ms-op-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                  }
+                }
+
+                .ms-color-swatch {
+                  position: relative;
+                  display: inline-block;
+                  width: 42px;
+                  height: 32px;
+                  border-radius: var(--radius-sm);
+                  border: 1px solid var(--border-default);
+                  overflow: hidden;
+                  cursor: pointer;
+                  transition: border-color var(--duration-standard) var(--ease-standard), transform var(--duration-micro) var(--ease-standard);
+                  background-image:
+                    linear-gradient(45deg, #2a2b30 25%, transparent 25%),
+                    linear-gradient(-45deg, #2a2b30 25%, transparent 25%),
+                    linear-gradient(45deg, transparent 75%, #2a2b30 75%),
+                    linear-gradient(-45deg, transparent 75%, #2a2b30 75%);
+                  background-size: 8px 8px;
+                  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+                }
+
+                .ms-color-swatch:hover {
+                  border-color: var(--border-strong);
+                }
+
+                .ms-color-swatch:active {
+                  transform: scale(0.94);
+                }
+
+                .ms-color-swatch input[type="color"] {
+                  position: absolute;
+                  inset: -4px;
+                  width: calc(100% + 8px);
+                  height: calc(100% + 8px);
+                  border: none;
+                  padding: 0;
+                  cursor: pointer;
+                  background: none;
+                }
+
+                /* ---- Selected-tool settings (right panel) ---- */
+                .ms-op-form-head {
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  margin-bottom: var(--space-4);
+                  animation: msFormIn 280ms var(--ease-standard) both;
+                }
+
+                @keyframes msFormIn {
+                  from {
+                    opacity: 0;
+                    transform: translateY(5px);
+                  }
+
+                  to {
+                    opacity: 1;
+                    transform: translateY(0);
+                  }
+                }
+
+                .ms-op-form-icon {
+                  width: 30px;
+                  height: 30px;
+                  border-radius: var(--radius-sm);
+                  background: var(--accent-primary-muted);
+                  color: var(--accent-primary);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                }
+
+                .ms-op-form-icon svg {
+                  width: 15px;
+                  height: 15px;
+                }
+
+                .ms-op-form-head-text {
+                  min-width: 0;
+                }
+
+                .ms-op-form-title {
+                  font-size: 13.5px;
+                  font-weight: 600;
+                  color: var(--text-primary);
+                  line-height: 17px;
+                }
+
+                .ms-op-form-desc {
+                  font-size: 11.5px;
+                  color: var(--text-tertiary);
+                  line-height: 15px;
+                  margin-top: 1px;
+                }
+
+                .ms-op-fields {
+                  display: flex;
+                  flex-direction: column;
+                  gap: var(--space-3);
+                  animation: msFormIn 320ms var(--ease-standard) both;
+                  animation-delay: 40ms;
+                }
+
+                .ms-field {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 6px;
+                  min-width: 0;
+                }
+
+                .ms-field-row {
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: var(--space-3);
+                }
+
+                .ms-field-label {
+                  font-size: 11.5px;
+                  color: var(--text-tertiary);
+                }
+
+                /* ---- Compact controls ---- */
+                .ms-select-wrap {
+                  position: relative;
+                }
+
+                .ms-select {
+                  width: 100%;
+                  height: 32px;
+                  padding: 0 26px 0 10px;
+                  background: var(--bg-surface);
+                  border: 1px solid var(--border-default);
+                  border-radius: var(--radius-sm);
+                  color: var(--text-primary);
+                  font-size: 12.5px;
+                  font-family: inherit;
+                  appearance: none;
+                  -webkit-appearance: none;
+                  cursor: pointer;
+                  transition: border-color var(--duration-micro) var(--ease-standard);
+                }
+
+                .ms-select:hover {
+                  border-color: var(--border-strong);
+                }
+
+                .ms-select:focus-visible {
+                  border-color: var(--accent-primary);
+                  outline: none;
+                  box-shadow: 0 0 0 3px var(--accent-primary-muted);
+                }
+
+                .ms-select-wrap::after {
+                  content: '';
+                  position: absolute;
+                  right: 10px;
+                  top: 50%;
+                  width: 7px;
+                  height: 7px;
+                  border-right: 1.5px solid var(--text-tertiary);
+                  border-bottom: 1.5px solid var(--text-tertiary);
+                  transform: translateY(-70%) rotate(45deg);
+                  transition: border-color var(--duration-micro) var(--ease-standard);
+                  pointer-events: none;
+                }
+
+                .ms-select-wrap:focus-within::after {
+                  border-color: var(--accent-primary);
+                }
+
+                .ms-input {
+                  width: 100%;
+                  height: 32px;
+                  padding: 0 10px;
+                  background: var(--bg-surface);
+                  border: 1px solid var(--border-default);
+                  border-radius: var(--radius-sm);
+                  color: var(--text-primary);
+                  font-size: 12.5px;
+                  font-family: inherit;
+                  transition: border-color var(--duration-micro) var(--ease-standard);
+                }
+
+                .ms-input:hover {
+                  border-color: var(--border-strong);
+                }
+
+                .ms-input:focus-visible {
+                  border-color: var(--accent-primary);
+                  outline: none;
+                  box-shadow: 0 0 0 3px var(--accent-primary-muted);
+                }
+
+                .ms-input[type="number"] {
+                  font-variant-numeric: tabular-nums;
+                }
+
+                .ms-unit-input {
+                  display: flex;
+                  align-items: stretch;
+                }
+
+                .ms-unit-input .ms-input {
+                  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+                  border-right: none;
+                  min-width: 0;
+                }
+
+                .ms-unit-suffix {
+                  display: flex;
+                  align-items: center;
+                  padding: 0 9px;
+                  background: var(--bg-elevated);
+                  border: 1px solid var(--border-default);
+                  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+                  font-size: 11px;
+                  color: var(--text-tertiary);
+                  white-space: nowrap;
+                  flex-shrink: 0;
+                }
+
+                .ms-toggle {
+                  position: relative;
+                  display: inline-flex;
+                  align-items: center;
+                  width: 34px;
+                  height: 20px;
+                  flex-shrink: 0;
+                  cursor: pointer;
+                }
+
+                .ms-toggle input {
+                  position: absolute;
+                  opacity: 0;
+                  width: 100%;
+                  height: 100%;
+                  margin: 0;
+                  cursor: pointer;
+                  border-radius: var(--radius-full);
+                }
+
+                .ms-toggle-track {
+                  position: absolute;
+                  inset: 0;
+                  background: var(--bg-elevated);
+                  border: 1px solid var(--border-default);
+                  border-radius: var(--radius-full);
+                  transition: background var(--duration-standard) var(--ease-standard), border-color var(--duration-standard) var(--ease-standard);
+                }
+
+                .ms-toggle-thumb {
+                  position: absolute;
+                  top: 2px;
+                  left: 2px;
+                  width: 14px;
+                  height: 14px;
+                  border-radius: var(--radius-full);
+                  background: var(--text-secondary);
+                  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+                  transition: transform 320ms var(--ease-spring), background var(--duration-standard) var(--ease-standard), width var(--duration-micro) var(--ease-standard), left var(--duration-micro) var(--ease-standard);
+                }
+
+                .ms-toggle:active .ms-toggle-thumb {
+                  width: 18px;
+                }
+
+                .ms-toggle input:checked~.ms-toggle-track {
+                  background: var(--accent-primary-muted);
+                  border-color: var(--accent-primary);
+                }
+
+                .ms-toggle input:checked~.ms-toggle-thumb {
+                  transform: translateX(14px);
+                  background: var(--accent-primary);
+                  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 3px var(--accent-primary-muted);
+                }
+
+                .ms-segmented {
+                  position: relative;
+                  display: flex;
+                  align-items: center;
+                  padding: 2px;
+                  background: var(--bg-surface);
+                  border: 1px solid var(--border-subtle);
+                  border-radius: var(--radius-sm);
+                  width: 100%;
+                }
+
+                .ms-segmented-indicator {
+                  position: absolute;
+                  top: 2px;
+                  bottom: 2px;
+                  left: 0;
+                  width: 0;
+                  border-radius: 6px;
+                  background: var(--accent-primary);
+                  transition: left 260ms var(--ease-standard), width 260ms var(--ease-standard);
+                  z-index: 0;
+                  will-change: left, width;
+                }
+
+                .ms-segmented button {
+                  position: relative;
+                  z-index: 1;
+                  flex: 1;
+                  height: 26px;
+                  border-radius: 6px;
+                  font-size: 11.5px;
+                  font-weight: 500;
+                  color: var(--text-secondary);
+                  transition: color var(--duration-micro) var(--ease-standard);
+                  white-space: nowrap;
+                }
+
+                .ms-segmented button:hover {
+                  color: var(--text-primary);
+                }
+
+                .ms-segmented button.active {
+                  color: var(--bg-void);
+                }
+
+                .ms-range-row {
+                  display: flex;
+                  align-items: center;
+                  gap: var(--space-3);
+                }
+
+                .ms-range {
+                  -webkit-appearance: none;
+                  appearance: none;
+                  flex: 1;
+                  height: 4px;
+                  border-radius: var(--radius-full);
+                  background: var(--bg-elevated);
+                  outline: none;
+                }
+
+                .ms-range::-webkit-slider-thumb {
+                  -webkit-appearance: none;
+                  width: 14px;
+                  height: 14px;
+                  margin-top: -5px;
+                  border-radius: 50%;
+                  background: var(--accent-primary);
+                  border: 2px solid #0c0d10;
+                  cursor: pointer;
+                }
+
+                .ms-range::-moz-range-thumb {
+                  width: 14px;
+                  height: 14px;
+                  border: 2px solid #0c0d10;
+                  border-radius: 50%;
+                  background: var(--accent-primary);
+                  cursor: pointer;
+                }
+
+                .ms-range-value {
+                  min-width: 40px;
+                  text-align: right;
+                  font-size: 12px;
+                  font-weight: 500;
+                  color: var(--text-primary);
+                  font-variant-numeric: tabular-nums;
+                  flex-shrink: 0;
+                }
+
+                .ms-file-row {
+                  display: flex;
+                  align-items: center;
+                  gap: var(--space-2);
+                  height: 32px;
+                  padding: 0 4px 0 10px;
+                  background: var(--bg-surface);
+                  border: 1px solid var(--border-default);
+                  border-radius: var(--radius-sm);
+                }
+
+                .ms-file-row-name {
+                  flex: 1;
+                  min-width: 0;
+                  font-size: 12px;
+                  color: var(--text-secondary);
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                }
+
+                .ms-file-row-name.is-empty {
+                  color: var(--text-disabled);
+                }
+
+                .ms-browse-btn {
+                  flex-shrink: 0;
+                  height: 24px;
+                  padding: 0 10px;
+                  border-radius: 6px;
+                  background: var(--bg-elevated);
+                  color: var(--text-secondary);
+                  font-size: 11px;
+                  font-weight: 500;
+                  border: 1px solid var(--border-subtle);
+                  transition: background var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard);
+                }
+
+                .ms-browse-btn:hover {
+                  background: var(--border-subtle);
+                  color: var(--text-primary);
+                }
+
+                /* ---- Command preview ---- */
+                .ms-command-box {
+                  position: relative;
+                  background: var(--bg-void);
+                  border: 1px solid var(--border-subtle);
+                  border-radius: var(--radius-sm);
+                  padding: 12px 44px 12px 14px;
+                  transition: border-color var(--duration-emphasis) var(--ease-standard), box-shadow var(--duration-emphasis) var(--ease-standard);
+                }
+
+                .ms-command-box.is-updated {
+                  border-color: var(--accent-primary);
+                  box-shadow: 0 0 0 3px var(--accent-primary-muted);
+                }
+
+                .ms-command-label {
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  font-size: 10.5px;
+                  font-weight: 600;
+                  text-transform: uppercase;
+                  letter-spacing: 0.04em;
+                  color: var(--text-disabled);
+                  margin-bottom: 8px;
+                }
+
+                .ms-command-label svg {
+                  width: 12px;
+                  height: 12px;
+                }
+
+                .ms-command-text {
+                  font-family: 'JetBrains Mono', monospace;
+                  font-size: 12.5px;
+                  line-height: 19px;
+                  color: var(--color-success);
+                  word-break: break-all;
+                  white-space: pre-wrap;
+                  transition: opacity var(--duration-standard) var(--ease-standard);
+                }
+
+                .ms-command-text .ms-cmd-flag {
+                  color: var(--accent-primary);
+                }
+
+                .ms-command-copy {
+                  position: absolute;
+                  right: 10px;
+                  top: 10px;
+                  width: 26px;
+                  height: 26px;
+                  border-radius: 6px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: var(--text-tertiary);
+                  transition: background var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard), transform var(--duration-micro) var(--ease-standard);
+                }
+
+                .ms-command-copy:hover {
+                  background: var(--border-subtle);
+                  color: var(--text-primary);
+                }
+
+                .ms-command-copy:active {
+                  transform: scale(0.9);
+                }
+
+                .ms-command-copy.is-copied {
+                  color: var(--color-success);
+                  background: rgba(111, 174, 140, 0.14);
+                }
+
+                .ms-command-copy svg {
+                  width: 13px;
+                  height: 13px;
+                  transition: opacity 160ms var(--ease-standard), transform 160ms var(--ease-spring);
+                }
+
+                .ms-command-copy .icon-check {
+                  position: absolute;
+                  opacity: 0;
+                  transform: scale(0.5);
+                }
+
+                .ms-command-copy.is-copied .icon-copy {
+                  opacity: 0;
+                  transform: scale(0.5);
+                }
+
+                .ms-command-copy.is-copied .icon-check {
+                  opacity: 1;
+                  transform: scale(1);
+                }
+
+                /* ---- Input files list (control card) ---- */
+                .ms-file-list {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 6px;
+                  max-height: 168px;
+                  overflow-y: auto;
+                  margin: 0;
+                }
+
+                .ms-file-list:empty::before {
+                  content: 'No files added yet';
+                  font-size: 12px;
+                  color: var(--text-disabled);
+                  padding: var(--space-2) 0;
+                  display: block;
+                }
+
+                .ms-file-item {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  padding: 6px 7px;
+                  background: var(--bg-void);
+                  border: 1px solid var(--border-subtle);
+                  border-radius: 7px;
+                  transition: border-color var(--duration-standard) var(--ease-standard), background var(--duration-standard) var(--ease-standard);
+                }
+
+                .ms-file-item:hover {
+                  border-color: var(--border-strong);
+                  background: var(--bg-elevated);
+                }
+
+                .ms-file-item:has(input[type="checkbox"]:checked) {
+                  border-color: var(--accent-primary-muted);
+                }
+
+                .ms-file-item input[type="checkbox"] {
+                  width: 14px;
+                  height: 14px;
+                  accent-color: var(--accent-primary);
+                  flex-shrink: 0;
+                  cursor: pointer;
+                }
+
+                .ms-file-item-icon {
+                  width: 22px;
+                  height: 22px;
+                  border-radius: 5px;
+                  background: var(--bg-elevated);
+                  color: var(--text-tertiary);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                }
+
+                .ms-file-item-icon svg {
+                  width: 11px;
+                  height: 11px;
+                }
+
+                .ms-file-item-name {
+                  flex: 1;
+                  min-width: 0;
+                  font-size: 11.5px;
+                  color: var(--text-primary);
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                }
+
+                .ms-file-item-size {
+                  font-size: 10.5px;
+                  color: var(--text-disabled);
+                  flex-shrink: 0;
+                  font-variant-numeric: tabular-nums;
+                }
+
+                .ms-file-item-remove {
+                  width: 18px;
+                  height: 18px;
+                  border-radius: 4px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: var(--text-disabled);
+                  flex-shrink: 0;
+                }
+
+                .ms-file-item-remove:hover {
+                  background: rgba(225, 104, 95, 0.12);
+                  color: var(--color-error);
+                }
+
+                .ms-file-item-remove svg {
+                  width: 10px;
+                  height: 10px;
+                }
+
+                .ms-drop-zone {
+                  border: 1.5px dashed var(--border-default);
+                  border-radius: var(--radius-sm);
+                  padding: var(--space-3);
+                  text-align: center;
+                  color: var(--text-tertiary);
+                  font-size: 11.5px;
+                  transition: border-color var(--duration-micro) var(--ease-standard), background var(--duration-micro) var(--ease-standard), color var(--duration-micro) var(--ease-standard);
+                  cursor: pointer;
+                }
+
+                .ms-drop-zone:hover,
+                .ms-drop-zone.is-drag-over {
+                  border-color: var(--accent-primary);
+                  background: var(--accent-primary-muted);
+                  color: var(--accent-primary);
+                }
+
+                .ms-drop-zone svg {
+                  width: 16px;
+                  height: 16px;
+                  margin: 0 auto 6px;
+                  display: block;
+                }
+              </style>
+              <div class="page-header">
+                <h1 class="text-title">Media Studio</h1>
+                <p class="text-body">Pick your files, choose an FFmpeg operation, and run it — no terminal required.</p>
+              </div>
+
+              <div class="runtime-grid">
+
+                <!-- ============ CENTER: OPERATION WORKSPACE ============ -->
+                <div class="editor-panel">
+                  <div class="editor-toolbar">
+                    <div class="editor-toolbar-left">
+                      <div class="ms-cat-tabs" id="msCatTabs">
+                        <span class="ms-cat-tabs-indicator" id="msCatIndicator"></span>
+                        <button class="ms-cat-tab active" data-cat="video" onclick="MediaStudio.setCategory('video')">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2.5" y="5" width="14" height="14" rx="2" />
+                            <path d="M16.5 10l5-3v10l-5-3z" />
+                          </svg>
+                          <span>Video</span>
+                        </button>
+                        <button class="ms-cat-tab" data-cat="audio" onclick="MediaStudio.setCategory('audio')">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 14v-3M8 17v-9M12 19v-14M16 17v-9M20 14v-3" />
+                          </svg>
+                          <span>Audio</span>
+                        </button>
+                        <button class="ms-cat-tab" data-cat="image" onclick="MediaStudio.setCategory('image')">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <path d="M21 15l-5-5L5 21" />
+                          </svg>
+                          <span>Image</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="editor-toolbar-actions">
+                      <span class="queue-count-chip" id="msQueueChip">0 in queue</span>
+                      <button class="btn btn--tertiary text-caption" id="msClearFormBtn"
+                        onclick="MediaStudio.resetForm()">Clear</button>
+                    </div>
+                  </div>
+
+                  <div class="editor-body">
+                    <div class="ms-op-grid" id="msOpStrip"><!-- populated by MediaStudio.renderOpStrip() --></div>
+                  </div>
+                </div>
+
+                <!-- ============ RIGHT: TOOL SETTINGS + COMMAND & RUN ============ -->
+                <div class="control-panel">
+                  <div class="control-card">
+
+                    <div id="msOpForm"><!-- populated by MediaStudio.renderForm() --></div>
+
+                    <div>
+                      <span class="text-label"
+                        style="color:var(--text-tertiary); display:block; margin-bottom:10px;">Command &amp; Run</span>
+                      <div class="ms-command-box" id="msCommandBox">
+                        <div class="ms-command-label">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 17l6-6-6-6M12 19h8" />
+                          </svg>
+                          Generated FFmpeg Command
+                        </div>
+                        <div class="ms-command-text" id="msCommandText">ffmpeg -i "input.mp4" -c:v libx264 -crf 20 -c:a
+                          aac -b:a 192k "output.mp4"</div>
+                        <button class="ms-command-copy" id="msCommandCopyBtn" data-tooltip="Copy command"
+                          onclick="MediaStudio.copyCommand()">
+                          <svg class="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="8" y="8" width="13" height="13" rx="2" />
+                            <path d="M4 16V4a2 2 0 0 1 2-2h12" />
+                          </svg>
+                          <svg class="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      <div class="control-buttons" style="margin-top: 12px;">
+                        <button class="btn btn--primary material-react" id="msRunBtn" onclick="MediaStudio.runNow()">
+                          <svg viewBox="0 0 24 24">
+                            <path d="M7 4l13 8-13 8V4z" fill="currentColor" />
+                          </svg>
+                          <span>Run Now</span>
+                        </button>
+                        <div class="control-buttons-row">
+                          <button class="btn btn--secondary" id="msAddQueueBtn" onclick="MediaStudio.addToQueue()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                              stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M4 6h16M4 12h16M4 18h10" />
+                            </svg>
+                            <span>Add to Queue</span>
+                          </button>
+                          <button class="btn btn--secondary" id="msPauseBtn" disabled
+                            onclick="MediaStudio.pauseQueue()">
+                            <svg viewBox="0 0 24 24">
+                              <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" />
+                              <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" />
+                            </svg>
+                            <span>Pause</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="control-divider"></div>
+
+                    <div>
+                      <span class="text-label"
+                        style="color:var(--text-tertiary); display:block; margin-bottom:10px;">Input Files</span>
+                      <div class="ms-file-list" id="msFileList"><!-- populated by MediaStudio.renderFileList() --></div>
+                      <div class="ms-drop-zone" id="msDropZone" onclick="MediaStudio.importFiles()"
+                        style="margin-top:8px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 4v12M6 10l6-6 6 6" />
+                          <path d="M4 20h16" />
+                        </svg>
+                        Drag &amp; drop files, or click to browse
+                      </div>
+                    </div>
+
+                    <div class="control-divider"></div>
+
+                    <div class="readout-row full">
+                      <span>Output Folder</span>
+                      <div class="ms-file-row" style="width:100%;">
+                        <span class="ms-file-row-name" id="msOutputFolder">C:\Users\Alex\Videos\MediaStudio</span>
+                        <button class="ms-browse-btn" onclick="MediaStudio.browseOutputFolder()">Browse</button>
+                      </div>
+                    </div>
+
+                    <div class="readout-row" style="margin-top: 14px;">
+                      <span>Hardware Acceleration</span>
+                      <label class="ms-toggle"><input type="checkbox" checked id="msHwAccel"><span
+                          class="ms-toggle-track"></span><span class="ms-toggle-thumb"></span></label>
+                    </div>
+
+                    <div class="control-divider"></div>
+
+                    <div class="control-readouts">
+                      <div class="readout-row">
+                        <span>Status</span>
+                        <span class="readout-value state-idle" id="msStatusReadout">
+                          <span class="chip-dot" id="msStatusDot"></span>Idle
+                        </span>
+                      </div>
+                      <div class="readout-row">
+                        <span>Queue</span>
+                        <span class="readout-value" id="msQueueReadout">0 waiting</span>
+                      </div>
+                      <div class="readout-row full" id="msLastOutputRow" style="display:none;">
+                        <span>Last Output</span>
+                        <div class="current-prompt-text" id="msLastOutputPath">—</div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <div class="lower-grid">
+                <div class="ms-shell-panel">
+                  <div class="ms-shell-head">
+                    <div class="ms-shell-head-left">
+                      <span class="ms-shell-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M4 6h16M4 12h16M4 18h10" />
+                        </svg></span>
+                      <span class="ms-shell-title">Batch Queue</span>
+                    </div>
+                    <div class="ms-shell-head-actions">
+                      <button class="btn btn--tertiary" onclick="MediaStudio.resetQueue()">Reset</button>
+                      <button class="btn btn--tertiary" onclick="MediaStudio.retryFailed()">Retry Failed</button>
+                      <button class="btn btn--tertiary" onclick="MediaStudio.clearCompleted()">Clear Completed</button>
+                    </div>
+                  </div>
+                  <div class="ms-shell-body" id="msQueueList"><!-- populated by MediaStudio.renderQueue() --></div>
+                </div>
+
+                <div class="ms-shell-panel">
+                  <div class="ms-shell-head">
+                    <div class="ms-shell-head-left">
+                      <span class="ms-shell-head-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M4 17l6-6-6-6M12 19h8" />
+                        </svg></span>
+                      <span class="ms-shell-title">PowerShell Output</span>
+                    </div>
+                    <div class="ms-shell-head-actions">
+                      <button class="btn btn--tertiary" id="msClearConsoleBtn"
+                        onclick="MediaStudio.clearConsole()">Clear</button>
+                    </div>
+                  </div>
+                  <div class="ms-shell-body ms-shell-body--console" id="msConsole">
+                    <div class="ms-console-prompt" id="msConsolePrompt">PS C:\Users\Alex\Videos\MediaStudio&gt; <span
+                        class="ms-console-cursor"></span></div>
+                  </div>
+                </div>
+              </div>
+              <script>
+                (function () {
+                  'use strict';
+
+                  /* ---------------------------------------------------------------
+                     ICONS — small shared icon set (24x24, stroke paths only)
+                  --------------------------------------------------------------- */
+                  var ICON = {
+                    format: '<path d="M4 7h11l-3-3M20 17H9l3 3"/>',
+                    resize: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+                    fps: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 9h4M3 15h4M17 9h4M17 15h4"/>',
+                    compress: '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 3v3M15 3v3M9 8h.01M15 8h.01M9 12h.01M15 12h.01"/>',
+                    trim: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.5 8.5L19 19M19 5L14.5 9.5M8.5 15.5L6 18"/>',
+                    split: '<path d="M4 12h4M16 12h4M11 5l-2 14M13 5l2 14"/>',
+                    merge: '<path d="M6 3v7a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V3M12 13v8M8 17l4 4 4-4"/>',
+                    crop: '<path d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2"/>',
+                    rotate: '<path d="M3 12a9 9 0 1 0 2.8-6.5"/><path d="M3 4v5h5"/>',
+                    flip: '<path d="M12 3v18M6 8l-3 4 3 4M18 8l3 4-3 4"/>',
+                    thumbnail: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+                    frames: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+                    gif: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M9.5 10l4 2.5-4 2.5V10z"/>',
+                    audioremove: '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M23 9l-6 6M17 9l6 6"/>',
+                    audioreplace: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M3 8l3-3 3 3"/>',
+                    watermark: '<path d="M12 2s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+                    subtitle: '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M7 14h3M13 14h4M7 10.5h10"/>',
+                    volume: '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
+                    bitrate: '<path d="M2 12h4l2-7 4 14 2-7h4l2 3h2"/>',
+                    samplerate: '<path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>',
+                    channels: '<circle cx="7" cy="12" r="4"/><circle cx="17" cy="12" r="4"/>',
+                    metadata: '<path d="M20.5 12.5L12 21l-9-9 8.5-8.5H20.5v8.5z"/><circle cx="15.5" cy="7.5" r="1"/>',
+                    extract: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M21 12V3"/>'
+                  };
+                  function svg(name, cls) {
+                    return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + (ICON[name] || '') + '</svg>';
+                  }
+
+                  /* ---------------------------------------------------------------
+                     OPERATIONS — id, category, label, icon, short desc, minimal
+                     field list, and a buildCommand(ctx) function returning the
+                     exact ffmpeg invocation for the currently selected values.
+                  --------------------------------------------------------------- */
+                  function fx(file) { return file || 'input.mp4'; }
+                  // আগের কোড:
+                  // function outName(base, ext) { return base.replace(/\.[^/.]+$/, '') + '_out.' + ext; }
+
+                  // নতুন কোড:
+                  function outName(base, ext) {
+                    var filename = base.split('\\').pop().split('/').pop();
+                    return filename.replace(/\.[^/.]+$/, '') + '_out.' + ext;
+                  }
+
+                  var RESOLUTION_PRESETS = {
+                    '426×240 — 240p': [426, 240],
+                    '640×360 — 360p': [640, 360],
+                    '854×480 — 480p': [854, 480],
+                    '1280×720 — 720p HD': [1280, 720],
+                    '1600×900 — 900p': [1600, 900],
+                    '1920×1080 — 1080p Full HD': [1920, 1080],
+                    '2560×1440 — 1440p QHD': [2560, 1440],
+                    '3840×2160 — 4K UHD': [3840, 2160],
+                    '4096×2160 — 4K DCI': [4096, 2160],
+                    '5120×2880 — 5K': [5120, 2880],
+                    '7680×4320 — 8K UHD': [7680, 4320],
+                    '1080×1920 — Vertical HD': [1080, 1920],
+                    '1080×1080 — Square': [1080, 1080]
+                  };
+
+                  var VIDEO_CODEC_MAP = { 'H.264': 'libx264', 'H.265 (HEVC)': 'libx265', 'AV1': 'libsvtav1', 'VP9': 'libvpx-vp9', 'VP8': 'libvpx', 'MPEG-4': 'mpeg4', 'MPEG-2': 'mpeg2video', 'ProRes': 'prores_ks', 'Copy (no re-encode)': 'copy' };
+                  var AUDIO_CODEC_MAP = { 'AAC': 'aac', 'MP3': 'libmp3lame', 'Opus': 'libopus', 'Vorbis': 'libvorbis', 'FLAC': 'flac', 'ALAC': 'alac', 'PCM (WAV)': 'pcm_s16le', 'AC3': 'ac3', 'Copy (no re-encode)': 'copy' };
+                  var AUDIO_BITRATES = ['32k', '64k', '96k', '128k', '160k', '192k', '224k', '256k', '320k', '384k'];
+                  var SAMPLE_RATES = ['8000 Hz', '11025 Hz', '16000 Hz', '22050 Hz', '32000 Hz', '44100 Hz', '48000 Hz', '88200 Hz', '96000 Hz', '176400 Hz', '192000 Hz'];
+
+                  var OPS = [
+                    {
+                      id: 'format', cat: 'video', label: 'Convert', icon: 'format', desc: 'Change container & codec',
+                      fields: [
+                        { id: 'outFormat', label: 'Output Format', type: 'select', options: ['MP4', 'MKV', 'MOV', 'AVI', 'WEBM', 'WMV', 'FLV', 'MPEG', 'TS', 'M4V', '3GP', 'OGV', 'GIF'], def: 'MP4' },
+                        { id: 'vcodec', label: 'Video Codec', type: 'select', options: Object.keys(VIDEO_CODEC_MAP), def: 'H.264' },
+                        { id: 'acodec', label: 'Audio Codec', type: 'select', options: Object.keys(AUDIO_CODEC_MAP), def: 'AAC' },
+                        { id: 'quality', label: 'Quality (CRF)', type: 'range', min: 0, max: 51, def: 20 }
+                      ],
+                      build: function (v, f) {
+                        var vc = VIDEO_CODEC_MAP[v.vcodec];
+                        var ac = AUDIO_CODEC_MAP[v.acodec];
+                        return 'ffmpeg -i "' + fx(f) + '" -c:v ' + vc + (vc !== 'copy' ? ' -crf ' + v.quality : '') + ' -c:a ' + ac + ' "' + outName(fx(f), v.outFormat.toLowerCase()) + '"';
+                      }
+                    },
+                    {
+                      id: 'resolution', cat: 'video', label: 'Resize', icon: 'resize', desc: 'Scale frame dimensions',
+                      fields: [
+                        { id: 'preset', label: 'Resolution Preset', type: 'select', options: ['Custom'].concat(Object.keys(RESOLUTION_PRESETS)), def: 'Custom', presetMap: RESOLUTION_PRESETS },
+                        { id: 'width', label: 'Width', type: 'number', def: 1280, unit: 'px' },
+                        { id: 'height', label: 'Height', type: 'number', def: 720, unit: 'px' },
+                        { id: 'scaling', label: 'Scaling Algorithm', type: 'select', options: ['Bilinear', 'Bicubic', 'Lanczos', 'Neighbor (Fast)', 'Spline'], def: 'Lanczos' },
+                        { id: 'keepAspect', label: 'Keep Aspect Ratio', type: 'toggle', def: true, span2: true }
+                      ],
+                      build: function (v, f) {
+                        var h = v.keepAspect ? '-1' : v.height;
+                        var flagMap = { 'Bilinear': 'bilinear', 'Bicubic': 'bicubic', 'Lanczos': 'lanczos', 'Neighbor (Fast)': 'neighbor', 'Spline': 'spline' };
+                        return 'ffmpeg -i "' + fx(f) + '" -vf "scale=' + v.width + ':' + h + ':flags=' + flagMap[v.scaling] + '" -c:a copy "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+                    {
+                      id: 'fps', cat: 'video', label: 'Change FPS', icon: 'fps', desc: 'Retime the frame rate',
+                      fields: [
+                        { id: 'target', label: 'Target FPS', type: 'select', options: ['12', '15', '23.976', '24', '25', '29.97', '30', '48', '50', '59.94', '60', '90', '100', '120', '144', '240'], def: '30' },
+                        { id: 'mode', label: 'Frame Handling', type: 'select', options: ['Duplicate / Drop (default)', 'Motion Interpolation (smoother, slower)'], def: 'Duplicate / Drop (default)' }
+                      ],
+                      build: function (v, f) {
+                        var vf = v.mode.indexOf('Interpolation') === 0 || v.mode.indexOf('Motion') === 0
+                          ? ' -vf "minterpolate=fps=' + v.target + ':mi_mode=mci"'
+                          : '';
+                        return 'ffmpeg -i "' + fx(f) + '"' + vf + ' -r ' + v.target + ' -c:a copy "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+                    {
+                      id: 'compression', cat: 'video', label: 'Compress', icon: 'compress', desc: 'Reduce file size',
+                      fields: [
+                        { id: 'quality', label: 'Quality', type: 'select', options: ['Lossless', 'Very High', 'High', 'Medium', 'Low', 'Very Low (smallest file)'], def: 'Medium' },
+                        { id: 'codec', label: 'Codec', type: 'select', options: ['H.264', 'H.265 (HEVC)', 'AV1', 'VP9'], def: 'H.264' },
+                        { id: 'preset', label: 'Encoding Speed', type: 'select', options: ['Ultrafast', 'Superfast', 'Fast', 'Medium', 'Slow', 'Veryslow (best compression)'], def: 'Medium' },
+                        { id: 'hw', label: 'Hardware Encoder', type: 'select', options: ['Auto', 'NVIDIA NVENC', 'Intel Quick Sync', 'AMD AMF', 'None (CPU)'], def: 'Auto', span2: true }
+                      ],
+                      build: function (v, f) {
+                        var crf = { Lossless: 0, 'Very High': 16, High: 20, Medium: 24, Low: 30, 'Very Low (smallest file)': 36 }[v.quality];
+                        var codecMap = { 'H.264': 'libx264', 'H.265 (HEVC)': 'libx265', 'AV1': 'libsvtav1', 'VP9': 'libvpx-vp9' };
+                        var vc = codecMap[v.codec];
+                        var extra = v.codec === 'VP9' ? ' -b:v 0' : '';
+                        return 'ffmpeg -i "' + fx(f) + '" -c:v ' + vc + ' -crf ' + crf + extra + ' -preset ' + v.preset.toLowerCase().split(' ')[0] + ' -c:a aac -b:a 128k "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+                    {
+                      id: 'trim', cat: 'video', label: 'Trim', icon: 'trim', desc: 'Cut to an in/out range',
+                      fields: [
+                        { id: 'start', label: 'Start Time', type: 'text', def: '00:00:10' },
+                        { id: 'end', label: 'End Time', type: 'text', def: '00:01:30' },
+                        { id: 'mode', label: 'Trim Mode', type: 'segmented', options: ['Copy (Fast)', 'Re-encode (Accurate)'], def: 'Copy (Fast)', span2: true }
+                      ],
+                      build: function (v, f) {
+                        if (v.mode === 'Re-encode (Accurate)') {
+                          return 'ffmpeg -i "' + fx(f) + '" -ss ' + v.start + ' -to ' + v.end + ' -c:v libx264 -crf 18 -c:a aac "' + outName(fx(f), 'mp4') + '"';
+                        }
+                        return 'ffmpeg -ss ' + v.start + ' -to ' + v.end + ' -i "' + fx(f) + '" -c copy "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+                    {
+                      id: 'split', cat: 'video', label: 'Split', icon: 'split', desc: 'Break into equal segments',
+                      fields: [
+                        { id: 'seconds', label: 'Segment Length', type: 'number', def: 60, unit: 'sec' },
+                        { id: 'reset', label: 'Reset Timestamps per Segment', type: 'toggle', def: true, span2: true }
+                      ],
+                      build: function (v, f) {
+                        return 'ffmpeg -i "' + fx(f) + '" -c copy -map 0 -segment_time ' + v.seconds + (v.reset ? ' -reset_timestamps 1' : '') + ' -f segment "' + fx(f).replace(/\.[^/.]+$/, '') + '_%03d.mp4"';
+                      }
+                    },
+                    {
+                      id: 'merge', cat: 'video', label: 'Merge', icon: 'merge', desc: 'Join checked files in order',
+                      fields: [
+                        { id: 'reencode', label: 'Re-encode (fixes mismatched codecs)', type: 'toggle', def: false, span2: true },
+                        { id: 'transition', label: 'Transition', type: 'select', options: ['None', 'Fade (0.5s)', 'Crossfade (1s)'], def: 'None' }
+                      ],
+                      build: function (v, f, files) {
+                        var mode = v.reencode || v.transition !== 'None' ? '-c:v libx264 -c:a aac' : '-c copy';
+                        var note = v.transition !== 'None' ? '  # ' + v.transition + ' via xfade/acrossfade' : '';
+                        return 'ffmpeg -f concat -safe 0 -i filelist.txt ' + mode + ' "merged_output.mp4"' + note + '  # ' + (files || []).length + ' files listed';
+                      }
+                    },
+                    {
+                      id: 'crop', cat: 'video', label: 'Crop', icon: 'crop', desc: 'Trim visible frame edges',
+                      fields: [
+                        { id: 'preset', label: 'Aspect Preset', type: 'select', options: ['Custom', '1:1 Square', '4:3 Classic', '16:9 Widescreen', '9:16 Vertical', '21:9 Ultrawide'], def: 'Custom' },
+                        { id: 'width', label: 'Width', type: 'number', def: 1080, unit: 'px' },
+                        { id: 'height', label: 'Height', type: 'number', def: 1080, unit: 'px' },
+                        { id: 'x', label: 'X Offset', type: 'number', def: 420, unit: 'px' },
+                        { id: 'y', label: 'Y Offset', type: 'number', def: 0, unit: 'px' }
+                      ],
+                      build: function (v, f) {
+                        return 'ffmpeg -i "' + fx(f) + '" -vf "crop=' + v.width + ':' + v.height + ':' + v.x + ':' + v.y + '" -c:a copy "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+                    {
+                      id: 'rotate', cat: 'video', label: 'Rotate', icon: 'rotate', desc: 'Rotate the frame',
+                      fields: [
+                        { id: 'angle', label: 'Angle', type: 'select', options: ['90° Clockwise', '90° Counter-clockwise', '180°', '270°', 'Custom'], def: '90° Clockwise' },
+                        { id: 'custom', label: 'Custom Angle', type: 'number', def: 45, unit: '°' },
+                        { id: 'autoRotate', label: 'Auto-Rotate from Metadata', type: 'toggle', def: true, span2: true }
+                      ],
+                      build: function (v, f) {
+                        var map = { '90° Clockwise': 'transpose=1', '90° Counter-clockwise': 'transpose=2', '180°': 'transpose=1,transpose=1', '270°': 'transpose=2,transpose=2,transpose=2' };
+                        var flt = map[v.angle] || ('rotate=' + v.custom + '*PI/180');
+                        return 'ffmpeg -i "' + fx(f) + '" -vf "' + flt + '" -c:a copy "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+                    {
+                      id: 'flip', cat: 'video', label: 'Flip', icon: 'flip', desc: 'Mirror the frame',
+                      fields: [
+                        { id: 'dir', label: 'Direction', type: 'segmented', options: ['Horizontal', 'Vertical', 'Both'], def: 'Horizontal', span2: true }
+                      ],
+                      build: function (v, f) {
+                        var flt = { Horizontal: 'hflip', Vertical: 'vflip', Both: 'hflip,vflip' }[v.dir];
+                        return 'ffmpeg -i "' + fx(f) + '" -vf ' + flt + ' -c:a copy "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+                    {
+                      id: 'thumbnail', cat: 'video', label: 'Thumbnail', icon: 'thumbnail', desc: 'Grab a single frame',
+                      fields: [
+                        { id: 'time', label: 'Capture Time', type: 'text', def: '00:00:05' },
+                        { id: 'format', label: 'Format', type: 'select', options: ['PNG', 'JPG', 'WEBP', 'BMP', 'TIFF'], def: 'PNG' },
+                        { id: 'quality', label: 'Quality', type: 'range', min: 1, max: 100, def: 95, span2: true }
+                      ],
+                      build: function (v, f) {
+                        var q = ' -q:v ' + Math.max(1, Math.round((100 - v.quality) / 3));
+                        return 'ffmpeg -ss ' + v.time + ' -i "' + fx(f) + '" -frames:v 1' + q + ' "' + outName(fx(f), v.format.toLowerCase()) + '"';
+                      }
+                    },
+                    {
+                      id: 'frames', cat: 'video', label: 'Extract Frames', icon: 'frames', desc: 'Pull multiple frames',
+                      fields: [
+                        { id: 'mode', label: 'Extract', type: 'select', options: ['Every Frame', 'Every Second', 'Every 2 Seconds', 'Every 5 Seconds', 'Every 10 Frames', 'Every 30 Frames'], def: 'Every Second' },
+                        { id: 'format', label: 'Format', type: 'select', options: ['PNG', 'JPG', 'WEBP', 'BMP'], def: 'PNG' }
+                      ],
+                      build: function (v, f) {
+                        var vfMap = { 'Every Frame': null, 'Every Second': 'fps=1', 'Every 2 Seconds': 'fps=0.5', 'Every 5 Seconds': 'fps=0.2', 'Every 10 Frames': "select='not(mod(n\\,10))'", 'Every 30 Frames': "select='not(mod(n\\,30))'" };
+                        var vf = vfMap[v.mode];
+                        return 'ffmpeg -i "' + fx(f) + '"' + (vf ? ' -vf "' + vf + '"' : '') + ' "frame_%04d.' + v.format.toLowerCase() + '"';
+                      }
+                    },
+                    {
+                      id: 'gif', cat: 'video', label: 'Create GIF', icon: 'gif', desc: 'Clip to an animated GIF',
+                      fields: [
+                        { id: 'start', label: 'Start', type: 'text', def: '00:00:02' },
+                        { id: 'end', label: 'End', type: 'text', def: '00:00:06' },
+                        { id: 'fps', label: 'FPS', type: 'number', def: 12 },
+                        { id: 'width', label: 'Width', type: 'number', def: 480, unit: 'px' },
+                        { id: 'loop', label: 'Loop', type: 'select', options: ['Infinite Loop', 'Play Once'], def: 'Infinite Loop' },
+                        { id: 'dither', label: 'Dithering', type: 'select', options: ['Bayer', 'Floyd-Steinberg', 'Sierra2', 'None'], def: 'Floyd-Steinberg' }
+                      ],
+                      build: function (v, f) {
+                        var loopFlag = v.loop === 'Infinite Loop' ? '0' : '-1';
+                        var ditherMap = { Bayer: 'bayer', 'Floyd-Steinberg': 'floyd_steinberg', Sierra2: 'sierra2', None: 'none' };
+                        return 'ffmpeg -ss ' + v.start + ' -to ' + v.end + ' -i "' + fx(f) + '" -vf "fps=' + v.fps + ',scale=' + v.width + ':-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse=dither=' + ditherMap[v.dither] + '" -loop ' + loopFlag + ' "' + outName(fx(f), 'gif') + '"';
+                      }
+                    },
+                    {
+                      id: 'audioremove', cat: 'video', label: 'Remove Audio', icon: 'audioremove', desc: 'Strip the audio track — no extra settings needed',
+                      fields: [],
+                      build: function (v, f) {
+                        return 'ffmpeg -i "' + fx(f) + '" -c:v copy -an "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+                    {
+                      id: 'audioreplace', cat: 'video', label: 'Replace Audio', icon: 'audioreplace', desc: 'Swap in a new audio track',
+                      fields: [
+                        { id: 'audioFile', label: 'Audio File', type: 'file', def: 'new_track.mp3', span2: true },
+                        { id: 'sync', label: 'Duration Match', type: 'select', options: ['Shortest Stream', 'Match Video Length'], def: 'Shortest Stream' },
+                        { id: 'volume', label: 'Volume', type: 'range', min: -20, max: 20, def: 0, unit: 'dB' }
+                      ],
+                      build: function (v, f) {
+                        var flag = v.sync === 'Shortest Stream' ? ' -shortest' : '';
+                        return 'ffmpeg -i "' + fx(f) + '" -i "' + v.audioFile + '" -filter:a "volume=' + v.volume + 'dB" -map 0:v -map 1:a -c:v copy' + flag + ' "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+                    {
+                      id: 'watermark', cat: 'video', label: 'Watermark', icon: 'watermark', desc: 'Overlay a logo image',
+                      fields: [
+                        { id: 'image', label: 'Watermark Image', type: 'file', def: 'logo.png', span2: true },
+                        { id: 'position', label: 'Position', type: 'select', options: ['Top Left', 'Top Right', 'Bottom Left', 'Bottom Right', 'Center'], def: 'Bottom Right' },
+                        { id: 'scale', label: 'Scale', type: 'number', def: 20, unit: '%' },
+                        { id: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 100, def: 80, unit: '%' }
+                      ],
+                      build: function (v, f) {
+                        var pos = { 'Top Left': '10:10', 'Top Right': 'W-w-10:10', 'Bottom Left': '10:H-h-10', 'Bottom Right': 'W-w-10:H-h-10', 'Center': '(W-w)/2:(H-h)/2' }[v.position];
+                        var scaleF = (v.scale / 100).toFixed(2);
+                        return 'ffmpeg -i "' + fx(f) + '" -i "' + v.image + '" -filter_complex "[1]scale=iw*' + scaleF + ':-1,format=rgba,colorchannelmixer=aa=' + (v.opacity / 100).toFixed(2) + '[wm];[0][wm]overlay=' + pos + '" "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+                    {
+                      id: 'subtitle', cat: 'video', label: 'Burn Subtitles', icon: 'subtitle', desc: 'Hard-code a subtitle file',
+                      fields: [
+                        { id: 'file', label: 'Subtitle File', type: 'file', def: 'captions.srt', span2: true },
+                        { id: 'size', label: 'Font Size', type: 'number', def: 24 },
+                        { id: 'color', label: 'Font Color', type: 'color', def: '#FFFFFF' }
+                      ],
+                      build: function (v, f) {
+                        var hex = (v.color || '#FFFFFF').replace('#', '');
+                        var assColor = '&H00' + hex.slice(4, 6) + hex.slice(2, 4) + hex.slice(0, 2);
+                        return 'ffmpeg -i "' + fx(f) + '" -vf "subtitles=\'' + v.file + '\':force_style=\'FontSize=' + v.size + ',PrimaryColour=' + assColor + '\'" "' + outName(fx(f), 'mp4') + '"';
+                      }
+                    },
+
+                    /* -------- AUDIO -------- */
+                    {
+                      id: 'a-format', cat: 'audio', label: 'Convert', icon: 'format', desc: 'Change audio format',
+                      fields: [
+                        { id: 'outFormat', label: 'Output Format', type: 'select', options: ['MP3', 'WAV', 'AAC', 'FLAC', 'OGG', 'M4A', 'WMA', 'OPUS'], def: 'MP3' },
+                        { id: 'bitrate', label: 'Bitrate', type: 'select', options: AUDIO_BITRATES, def: '192k' }
+                      ],
+                      build: function (v, f) {
+                        var codec = { MP3: 'libmp3lame', WAV: 'pcm_s16le', AAC: 'aac', FLAC: 'flac', OGG: 'libvorbis', M4A: 'aac', WMA: 'wmav2', OPUS: 'libopus' }[v.outFormat];
+                        var lossless = v.outFormat === 'WAV' || v.outFormat === 'FLAC';
+                        return 'ffmpeg -i "' + fx(f) + '" -c:a ' + codec + (!lossless ? ' -b:a ' + v.bitrate : '') + ' "' + outName(fx(f), v.outFormat.toLowerCase()) + '"';
+                      }
+                    },
+                    {
+                      id: 'a-merge', cat: 'audio', label: 'Merge', icon: 'merge', desc: 'Join checked files in order',
+                      fields: [],
+                      build: function (v, f, files) {
+                        return 'ffmpeg -f concat -safe 0 -i filelist.txt -c copy "merged_audio.mp3"  # ' + (files || []).length + ' files listed';
+                      }
+                    },
+                    {
+                      id: 'a-split', cat: 'audio', label: 'Split', icon: 'split', desc: 'Break into equal segments',
+                      fields: [
+                        { id: 'seconds', label: 'Segment Length', type: 'number', def: 120, unit: 'sec' }
+                      ],
+                      build: function (v, f) {
+                        return 'ffmpeg -i "' + fx(f) + '" -f segment -segment_time ' + v.seconds + ' -c copy "' + fx(f).replace(/\.[^/.]+$/, '') + '_%03d.mp3"';
+                      }
+                    },
+                    {
+                      id: 'a-extract', cat: 'audio', label: 'Extract from Video', icon: 'extract', desc: 'Pull the audio track out',
+                      fields: [
+                        { id: 'outFormat', label: 'Output Format', type: 'select', options: ['MP3', 'AAC', 'WAV', 'FLAC', 'OGG', 'M4A', 'OPUS'], def: 'MP3' },
+                        { id: 'bitrate', label: 'Bitrate', type: 'select', options: AUDIO_BITRATES, def: '192k' }
+                      ],
+                      build: function (v, f) {
+                        var codec = { MP3: 'libmp3lame', AAC: 'aac', WAV: 'pcm_s16le', FLAC: 'flac', OGG: 'libvorbis', M4A: 'aac', OPUS: 'libopus' }[v.outFormat];
+                        var lossless = v.outFormat === 'WAV' || v.outFormat === 'FLAC';
+                        return 'ffmpeg -i "' + fx(f) + '" -vn -c:a ' + codec + (!lossless ? ' -b:a ' + v.bitrate : '') + ' "' + outName(fx(f), v.outFormat.toLowerCase()) + '"';
+                      }
+                    },
+                    {
+                      id: 'a-volume', cat: 'audio', label: 'Volume', icon: 'volume', desc: 'Boost or lower gain',
+                      fields: [
+                        { id: 'gain', label: 'Gain', type: 'range', min: -20, max: 20, def: 0, unit: 'dB', span2: true }
+                      ],
+                      build: function (v, f) {
+                        return 'ffmpeg -i "' + fx(f) + '" -filter:a "volume=' + v.gain + 'dB" "' + outName(fx(f), 'mp3') + '"';
+                      }
+                    },
+                    {
+                      id: 'a-bitrate', cat: 'audio', label: 'Bitrate', icon: 'bitrate', desc: 'Set a fixed output bitrate',
+                      fields: [
+                        { id: 'bitrate', label: 'Target Bitrate', type: 'select', options: AUDIO_BITRATES, def: '192k' },
+                        { id: 'vbr', label: 'Mode', type: 'segmented', options: ['CBR', 'VBR'], def: 'CBR' }
+                      ],
+                      build: function (v, f) {
+                        var flag = v.vbr === 'VBR' ? ' -q:a 2' : ' -b:a ' + v.bitrate;
+                        return 'ffmpeg -i "' + fx(f) + '"' + flag + ' "' + outName(fx(f), 'mp3') + '"';
+                      }
+                    },
+                    {
+                      id: 'a-samplerate', cat: 'audio', label: 'Sample Rate', icon: 'samplerate', desc: 'Resample the audio',
+                      fields: [
+                        { id: 'rate', label: 'Sample Rate', type: 'select', options: SAMPLE_RATES, def: '44100 Hz', span2: true }
+                      ],
+                      build: function (v, f) {
+                        return 'ffmpeg -i "' + fx(f) + '" -ar ' + parseInt(v.rate, 10) + ' "' + outName(fx(f), 'mp3') + '"';
+                      }
+                    },
+                    {
+                      id: 'a-channels', cat: 'audio', label: 'Channels', icon: 'channels', desc: 'Channel layout output',
+                      fields: [
+                        { id: 'mode', label: 'Channel Layout', type: 'select', options: ['Mono (1.0)', 'Stereo (2.0)', '2.1', 'Quad (4.0)', '5.0', '5.1', '6.1', '7.1'], def: 'Stereo (2.0)', span2: true }
+                      ],
+                      build: function (v, f) {
+                        var map = { 'Mono (1.0)': 1, 'Stereo (2.0)': 2, '2.1': 3, 'Quad (4.0)': 4, '5.0': 5, '5.1': 6, '6.1': 7, '7.1': 8 };
+                        return 'ffmpeg -i "' + fx(f) + '" -ac ' + map[v.mode] + ' "' + outName(fx(f), 'mp3') + '"';
+                      }
+                    },
+                    {
+                      id: 'a-metadata', cat: 'audio', label: 'Metadata', icon: 'metadata', desc: 'Edit ID3 tags',
+                      fields: [
+                        { id: 'title', label: 'Title', type: 'text', def: 'Untitled Track' },
+                        { id: 'artist', label: 'Artist', type: 'text', def: 'Unknown Artist' },
+                        { id: 'album', label: 'Album', type: 'text', def: '' },
+                        { id: 'genre', label: 'Genre', type: 'text', def: '' },
+                        { id: 'year', label: 'Year', type: 'text', def: '' }
+                      ],
+                      build: function (v, f) {
+                        var tags = ' -metadata title="' + v.title + '" -metadata artist="' + v.artist + '"';
+                        if (v.album) tags += ' -metadata album="' + v.album + '"';
+                        if (v.genre) tags += ' -metadata genre="' + v.genre + '"';
+                        if (v.year) tags += ' -metadata date="' + v.year + '"';
+                        return 'ffmpeg -i "' + fx(f) + '"' + tags + ' -c copy "' + outName(fx(f), 'mp3') + '"';
+                      }
+                    },
+
+                    /* -------- IMAGE -------- */
+                    {
+                      id: 'i-format', cat: 'image', label: 'Convert', icon: 'format', desc: 'Change image format',
+                      fields: [
+                        { id: 'outFormat', label: 'Output Format', type: 'select', options: ['PNG', 'JPG', 'WEBP', 'BMP', 'TIFF', 'GIF', 'ICO', 'TGA'], def: 'PNG' },
+                        { id: 'quality', label: 'Quality', type: 'range', min: 1, max: 100, def: 90 }
+                      ],
+                      build: function (v, f) {
+                        return 'ffmpeg -i "' + fx(f) + '" -q:v ' + Math.max(1, Math.round((100 - v.quality) / 3)) + ' "' + outName(fx(f), v.outFormat.toLowerCase()) + '"';
+                      }
+                    },
+                    {
+                      id: 'i-resize', cat: 'image', label: 'Resize', icon: 'resize', desc: 'Scale image dimensions',
+                      fields: [
+                        { id: 'preset', label: 'Resolution Preset', type: 'select', options: ['Custom'].concat(Object.keys(RESOLUTION_PRESETS)), def: 'Custom', presetMap: RESOLUTION_PRESETS },
+                        { id: 'width', label: 'Width', type: 'number', def: 1600, unit: 'px' },
+                        { id: 'height', label: 'Height', type: 'number', def: 900, unit: 'px' },
+                        { id: 'keepAspect', label: 'Keep Aspect Ratio', type: 'toggle', def: true, span2: true }
+                      ],
+                      build: function (v, f) {
+                        var h = v.keepAspect ? '-1' : v.height;
+                        return 'ffmpeg -i "' + fx(f) + '" -vf "scale=' + v.width + ':' + h + '" "' + outName(fx(f), 'png') + '"';
+                      }
+                    },
+                    {
+                      id: 'i-compress', cat: 'image', label: 'Compress', icon: 'compress', desc: 'Reduce file size',
+                      fields: [
+                        { id: 'quality', label: 'Quality', type: 'range', min: 1, max: 100, def: 75, span2: true }
+                      ],
+                      build: function (v, f) {
+                        return 'ffmpeg -i "' + fx(f) + '" -q:v ' + Math.max(1, Math.round((100 - v.quality) / 3)) + ' "' + outName(fx(f), 'jpg') + '"';
+                      }
+                    },
+                    {
+                      id: 'i-rotate', cat: 'image', label: 'Rotate', icon: 'rotate', desc: 'Rotate the image',
+                      fields: [
+                        { id: 'angle', label: 'Angle', type: 'select', options: ['90° Clockwise', '90° Counter-clockwise', '180°', '270°', 'Custom'], def: '90° Clockwise' },
+                        { id: 'custom', label: 'Custom Angle', type: 'number', def: 45, unit: '°', span2: true }
+                      ],
+                      build: function (v, f) {
+                        var map = { '90° Clockwise': 'transpose=1', '90° Counter-clockwise': 'transpose=2', '180°': 'transpose=1,transpose=1', '270°': 'transpose=2,transpose=2,transpose=2' };
+                        var flt = map[v.angle] || ('rotate=' + v.custom + '*PI/180');
+                        return 'ffmpeg -i "' + fx(f) + '" -vf "' + flt + '" "' + outName(fx(f), 'png') + '"';
+                      }
+                    },
+                    {
+                      id: 'i-flip', cat: 'image', label: 'Flip', icon: 'flip', desc: 'Mirror the image',
+                      fields: [
+                        { id: 'dir', label: 'Direction', type: 'segmented', options: ['Horizontal', 'Vertical', 'Both'], def: 'Horizontal', span2: true }
+                      ],
+                      build: function (v, f) {
+                        var flt = { Horizontal: 'hflip', Vertical: 'vflip', Both: 'hflip,vflip' }[v.dir];
+                        return 'ffmpeg -i "' + fx(f) + '" -vf ' + flt + ' "' + outName(fx(f), 'png') + '"';
+                      }
+                    },
+                    {
+                      id: 'i-watermark', cat: 'image', label: 'Watermark', icon: 'watermark', desc: 'Overlay a logo image',
+                      fields: [
+                        { id: 'image', label: 'Watermark Image', type: 'file', def: 'logo.png', span2: true },
+                        { id: 'position', label: 'Position', type: 'select', options: ['Top Left', 'Top Right', 'Bottom Left', 'Bottom Right', 'Center'], def: 'Bottom Right' },
+                        { id: 'scale', label: 'Scale', type: 'number', def: 20, unit: '%' },
+                        { id: 'opacity', label: 'Opacity', type: 'range', min: 0, max: 100, def: 80, unit: '%' }
+                      ],
+                      build: function (v, f) {
+                        var pos = { 'Top Left': '10:10', 'Top Right': 'W-w-10:10', 'Bottom Left': '10:H-h-10', 'Bottom Right': 'W-w-10:H-h-10', 'Center': '(W-w)/2:(H-h)/2' }[v.position];
+                        var scaleF = (v.scale / 100).toFixed(2);
+                        return 'ffmpeg -i "' + fx(f) + '" -i "' + v.image + '" -filter_complex "[1]scale=iw*' + scaleF + ':-1,format=rgba,colorchannelmixer=aa=' + (v.opacity / 100).toFixed(2) + '[wm];[0][wm]overlay=' + pos + '" "' + outName(fx(f), 'png') + '"';
+                      }
+                    },
+                    {
+                      id: 'i-metadata', cat: 'image', label: 'Metadata', icon: 'metadata', desc: 'Edit EXIF tags',
+                      fields: [
+                        { id: 'title', label: 'Title', type: 'text', def: '' },
+                        { id: 'author', label: 'Author', type: 'text', def: '' },
+                        { id: 'copyright', label: 'Copyright', type: 'text', def: '' },
+                        { id: 'description', label: 'Description', type: 'text', def: '', span2: true }
+                      ],
+                      build: function (v, f) {
+                        var tags = ' -metadata title="' + v.title + '" -metadata author="' + v.author + '"';
+                        if (v.copyright) tags += ' -metadata copyright="' + v.copyright + '"';
+                        if (v.description) tags += ' -metadata description="' + v.description + '"';
+                        return 'ffmpeg -i "' + fx(f) + '"' + tags + ' "' + outName(fx(f), 'png') + '"';
+                      }
+                    }
+                  ];
+
+                  function findOp(id) { for (var i = 0; i < OPS.length; i++) if (OPS[i].id === id) return OPS[i]; return null; }
+
+                  /* ---------------------------------------------------------------
+                     STATE (UPDATED: No Fake Data, Dynamic Folder)
+                  --------------------------------------------------------------- */
+
+                  const os = require('os');
+                  const path = require('path');
+                  const defaultOut = path.join(os.homedir(), 'Videos', 'MediaStudio');
+
+                  var state = {
+                    category: 'video',
+                    activeOp: 'format',
+                    values: {},
+                    files: [],
+                    nextFileId: 1,
+                    outputFolder: defaultOut,
+                    queue: [],
+                    nextJobId: 1,
+                    isRunning: false,
+                    isPaused: false
+                  };
+
+                  // নতুন প্রোডাকশন-রেডি কোড:
+                  document.addEventListener('DOMContentLoaded', () => {
+                    const outFolderEl = document.getElementById('msOutputFolder');
+                    if (outFolderEl) outFolderEl.textContent = defaultOut;
+
+                    // PowerShell এর ডামি Alex নাম চেঞ্জ করে আসল পিসির নাম বসানো
+                    const psPrompt = document.getElementById('msConsolePrompt');
+                    if (psPrompt) {
+                      psPrompt.innerHTML = `PS ${defaultOut}&gt; <span class="ms-console-cursor"></span>`;
+                    }
+                  });
+
+                  function loadQueueState() {
+                    try {
+                      var saved = localStorage.getItem('ms_queue_state');
+                      if (saved) {
+                        var parsed = JSON.parse(saved);
+                        if (parsed.queue) state.queue = parsed.queue;
+
+                        // 🔴 প্রোডাকশন চেক: ইউজারের আসল পিসির নাম মিললে তবেই আগের ফোল্ডার লোড করবে
+                        const currentPcUser = os.homedir().split('\\')[2];
+                        if (parsed.outputFolder && parsed.outputFolder.includes(currentPcUser)) {
+                          state.outputFolder = parsed.outputFolder;
+                        } else {
+                          state.outputFolder = defaultOut; // অন্য পিসিতে রান হলে রিয়েল ইউজারের ডিফল্ট ফোল্ডার নেবে
+                        }
+
+                        // UI আপডেট
+                        const outFolderEl = document.getElementById('msOutputFolder');
+                        if (outFolderEl) outFolderEl.textContent = state.outputFolder;
+
+                        if (parsed.nextJobId) state.nextJobId = parsed.nextJobId;
+
+                        var needsSave = false;
+                        state.queue.forEach(function (j) {
+                          if (j.status === 'running') {
+                            j.status = 'waiting';
+                            j.progress = 0;
+                            needsSave = true;
+                          }
+                        });
+                        if (needsSave) saveQueueState();
+                      }
+                    } catch (e) { }
+                  }
+
+                  function escHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+                  function fmtTime() { var d = new Date(); function p(n) { return (n < 10 ? '0' : '') + n; } return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()); }
+
+                  /* ---------------------------------------------------------------
+                     RENDER: operation strip
+                  --------------------------------------------------------------- */
+                  function renderOpStrip() {
+                    var el = document.getElementById('msOpStrip');
+                    if (!el) return;
+                    var ops = OPS.filter(function (o) { return o.cat === state.category; });
+                    el.innerHTML = ops.map(function (o) {
+                      var isActive = o.id === state.activeOp;
+                      var cls = isActive ? ' active just-selected' : '';
+                      return '<button class="ms-op-card' + cls + '" data-op="' + o.id + '" onclick="MediaStudio.selectOp(\'' + o.id + '\')">' +
+                        '<span class="ms-op-card-icon">' + svg(o.icon) + '</span>' +
+                        '<span class="ms-op-card-label">' + o.label + '</span>' +
+                        '</button>';
+                    }).join('');
+                  }
+
+                  /* ---------------------------------------------------------------
+                     RENDER: minimal field form for the active operation
+                  --------------------------------------------------------------- */
+                  function fieldControlHtml(op, field) {
+                    var val = state.values[field.id];
+                    var oninput = "MediaStudio.onFieldChange()";
+                    var id = 'msf-' + field.id;
+                    switch (field.type) {
+                      case 'select':
+                        var selChange = field.presetMap ? "MediaStudio.onPresetChange('" + field.id + "', this.value)" : oninput;
+                        return '<div class="ms-select-wrap"><select class="ms-select" id="' + id + '" onchange="' + selChange + '">' +
+                          field.options.map(function (o) { return '<option' + (o === val ? ' selected' : '') + '>' + o + '</option>'; }).join('') +
+                          '</select></div>';
+                      case 'number':
+                        return '<div class="ms-unit-input"><input class="ms-input" type="number" id="' + id + '" value="' + val + '" oninput="' + oninput + '">' +
+                          (field.unit ? '<span class="ms-unit-suffix">' + field.unit + '</span>' : '') + '</div>';
+                      case 'text':
+                        return '<input class="ms-input" type="text" id="' + id + '" value="' + escHtml(val) + '" oninput="' + oninput + '">';
+                      case 'toggle':
+                        return '<label class="ms-toggle"><input type="checkbox" id="' + id + '"' + (val ? ' checked' : '') + ' onchange="' + oninput + '"><span class="ms-toggle-track"></span><span class="ms-toggle-thumb"></span></label>';
+                      case 'range':
+                        return '<div class="ms-range-row"><input type="range" class="ms-range" id="' + id + '" min="' + field.min + '" max="' + field.max + '" value="' + val + '" oninput="MediaStudio.onRangeInput(\'' + field.id + '\')"><span class="ms-range-value" id="' + id + '-val">' + val + (field.unit || '') + '</span></div>';
+                      case 'segmented':
+                        return '<div class="ms-segmented" id="' + id + '"><span class="ms-segmented-indicator"></span>' + field.options.map(function (o) {
+                          return '<button type="button" class="' + (o === val ? 'active' : '') + '" onclick="MediaStudio.onSegmentChange(\'' + field.id + '\', this)">' + o + '</button>';
+                        }).join('') + '</div>';
+                      case 'file':
+                        return '<div class="ms-file-row"><span class="ms-file-row-name' + (val ? '' : ' is-empty') + '" id="' + id + '-name">' + (val || 'No file chosen') + '</span><button type="button" class="ms-browse-btn" onclick="MediaStudio.browseAuxFile(\'' + field.id + '\')">Browse</button></div>';
+                      case 'color':
+                        return '<span class="ms-color-swatch"><input type="color" id="' + id + '" value="' + (val || '#FFFFFF') + '" onchange="' + oninput + '"></span>';
+                      default:
+                        return '';
+                    }
+                  }
+
+                  function onPresetChange(fieldId, value) {
+                    var op = findOp(state.activeOp);
+                    var field = op.fields.filter(function (f) { return f.id === fieldId; })[0];
+                    state.values[fieldId] = value;
+                    if (field && field.presetMap && field.presetMap[value]) {
+                      state.values.width = field.presetMap[value][0];
+                      state.values.height = field.presetMap[value][1];
+                    }
+                    renderForm();
+                  }
+
+                  function renderForm() {
+                    var op = findOp(state.activeOp);
+                    var el = document.getElementById('msOpForm');
+                    if (!op || !el) return;
+
+                    // seed default values for any field not already set for this op
+                    op.fields.forEach(function (f) { if (!(f.id in state.values)) state.values[f.id] = f.def; });
+
+                    var html = '<div class="ms-op-form-head"><span class="ms-op-form-icon">' + svg(op.icon) + '</span>' +
+                      '<div class="ms-op-form-head-text"><div class="ms-op-form-title">' + op.label + '</div><div class="ms-op-form-desc">' + op.desc + '</div></div></div>';
+
+                    if (op.fields.length === 0) {
+                      html += '<p class="text-caption" style="color:var(--text-tertiary); line-height:17px;">Nothing to configure — this operation runs with sensible defaults.</p>';
+                    } else {
+                      html += '<div class="ms-op-fields">';
+                      html += op.fields.map(function (f) {
+                        return '<div class="ms-field"><span class="ms-field-label">' + f.label + '</span>' + fieldControlHtml(op, f) + '</div>';
+                      }).join('');
+                      html += '</div>';
+                    }
+
+                    el.innerHTML = html;
+                    positionAllSegmentIndicators(el);
+                    updateCommand();
+                  }
+
+                  function onFieldChange() {
+                    var op = findOp(state.activeOp);
+                    if (!op) return;
+                    op.fields.forEach(function (f) {
+                      var el = document.getElementById('msf-' + f.id);
+                      if (!el) return;
+                      if (f.type === 'toggle') state.values[f.id] = el.checked;
+                      else if (f.type === 'number' || f.type === 'range') state.values[f.id] = parseFloat(el.value);
+                      else state.values[f.id] = el.value;
+                    });
+                    updateCommand();
+                  }
+
+                  function onRangeInput(fieldId) {
+                    var op = findOp(state.activeOp);
+                    var field = op.fields.filter(function (f) { return f.id === fieldId; })[0];
+                    var el = document.getElementById('msf-' + fieldId);
+                    var valEl = document.getElementById('msf-' + fieldId + '-val');
+                    state.values[fieldId] = parseFloat(el.value);
+                    if (valEl) valEl.textContent = el.value + (field.unit || '');
+                    updateCommand();
+                  }
+
+                  function positionSegmentIndicator(wrap, skipAnim) {
+                    if (!wrap) return;
+                    var indicator = wrap.querySelector('.ms-segmented-indicator');
+                    var active = wrap.querySelector('button.active');
+                    if (!indicator || !active) return;
+                    if (skipAnim) indicator.style.transition = 'none';
+                    indicator.style.left = active.offsetLeft + 'px';
+                    indicator.style.width = active.offsetWidth + 'px';
+                    if (skipAnim) {
+                      indicator.offsetHeight;
+                      indicator.style.transition = '';
+                    }
+                  }
+
+                  function positionAllSegmentIndicators(root) {
+                    var wraps = (root || document).querySelectorAll('.ms-segmented');
+                    Array.prototype.forEach.call(wraps, function (w) { positionSegmentIndicator(w, true); });
+                  }
+
+                  function onSegmentChange(fieldId, btn) {
+                    var wrap = btn.parentNode;
+                    Array.prototype.forEach.call(wrap.children, function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    state.values[fieldId] = btn.textContent;
+                    positionSegmentIndicator(wrap, false);
+                    updateCommand();
+                  }
+
+                  function browseAuxFile(fieldId) {
+                    var name = prompt('Enter a file name (this simulates a native file picker):', state.values[fieldId] || '');
+                    if (name === null) return;
+                    state.values[fieldId] = name;
+                    var nameEl = document.getElementById('msf-' + fieldId + '-name');
+                    if (nameEl) { nameEl.textContent = name || 'No file chosen'; nameEl.classList.toggle('is-empty', !name); }
+                    updateCommand();
+                  }
+
+                  /* ---------------------------------------------------------------
+                     COMMAND PREVIEW
+                  --------------------------------------------------------------- */
+                  function primaryFile() {
+                    var checked = state.files.filter(function (f) { return f.checked; });
+                    return checked.length ? checked[0].name : (state.files[0] ? state.files[0].name : 'input.mp4');
+                  }
+
+                  var commandFlashTimer = null;
+                  function updateCommand() {
+                    var op = findOp(state.activeOp);
+                    var el = document.getElementById('msCommandText');
+                    if (!op || !el) return;
+                    var checkedFiles = state.files.filter(function (f) { return f.checked; }).map(function (f) { return f.name; });
+                    var cmd;
+                    try {
+                      cmd = op.build(state.values, primaryFile(), checkedFiles);
+                    } catch (e) {
+                      cmd = 'ffmpeg -i "' + primaryFile() + '" ...';
+                    }
+                    var changed = el.textContent !== cmd;
+                    el.textContent = cmd;
+
+                    if (changed) {
+                      var box = document.getElementById('msCommandBox');
+                      if (box) {
+                        box.classList.add('is-updated');
+                        clearTimeout(commandFlashTimer);
+                        commandFlashTimer = setTimeout(function () { box.classList.remove('is-updated'); }, 420);
+                      }
+                    }
+                  }
+
+                  function copyCommand() {
+                    var text = document.getElementById('msCommandText').textContent;
+                    var btn = document.getElementById('msCommandCopyBtn');
+                    var done = function () {
+                      log('completed', 'Command copied to clipboard.');
+                      if (btn) {
+                        btn.classList.add('is-copied');
+                        setTimeout(function () { btn.classList.remove('is-copied'); }, 1400);
+                      }
+                    };
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                      navigator.clipboard.writeText(text).then(done, done);
+                    } else { done(); }
+                  }
+
+                  /* ---------------------------------------------------------------
+                     CATEGORY / OPERATION SELECTION
+                  --------------------------------------------------------------- */
+                  function positionCatIndicator(skipAnim) {
+                    var wrap = document.getElementById('msCatTabs');
+                    var indicator = document.getElementById('msCatIndicator');
+                    if (!wrap || !indicator) return;
+                    var active = wrap.querySelector('.ms-cat-tab.active');
+                    if (!active) return;
+                    if (skipAnim) indicator.style.transition = 'none';
+                    indicator.style.left = active.offsetLeft + 'px';
+                    indicator.style.width = active.offsetWidth + 'px';
+                    if (skipAnim) {
+                      indicator.offsetHeight; /* force reflow so the snap applies before transitions resume */
+                      indicator.style.transition = '';
+                    }
+                  }
+
+                  function setCategory(cat) {
+                    state.category = cat;
+                    var tabs = document.querySelectorAll('#msCatTabs .ms-cat-tab');
+                    Array.prototype.forEach.call(tabs, function (t) { t.classList.toggle('active', t.getAttribute('data-cat') === cat); });
+                    positionCatIndicator();
+                    var firstOfCat = OPS.filter(function (o) { return o.cat === cat; })[0];
+                    var newId = firstOfCat ? firstOfCat.id : null;
+                    if (newId !== state.activeOp) state.values = {};
+                    state.activeOp = newId;
+                    renderOpStrip();
+                    renderForm();
+                  }
+
+                  function selectOp(id) {
+                    if (id !== state.activeOp) state.values = {};
+                    state.activeOp = id;
+                    renderOpStrip();
+                    renderForm();
+                  }
+
+                  function resetForm() {
+                    var op = findOp(state.activeOp);
+                    if (!op) return;
+                    op.fields.forEach(function (f) { state.values[f.id] = f.def; });
+                    renderForm();
+                  }
+
+                  /* ---------------------------------------------------------------
+                     FILE LIST
+                  --------------------------------------------------------------- */
+                  function fileIcon(kind) {
+                    if (kind === 'audio') return '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>';
+                    if (kind === 'image') return '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>';
+                    return '<rect x="2.5" y="4.5" width="19" height="13" rx="2"/><path d="M9.5 8l4 2.5-4 2.5V8z"/>';
+                  }
+
+                  function renderFileList() {
+                    var el = document.getElementById('msFileList');
+                    if (!el) return;
+                    el.innerHTML = state.files.map(function (f) {
+                      return '<div class="ms-file-item">' +
+                        '<input type="checkbox" ' + (f.checked ? 'checked' : '') + ' onchange="MediaStudio.toggleFile(' + f.id + ')">' +
+                        '<span class="ms-file-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + fileIcon(f.kind) + '</svg></span>' +
+                        '<span class="ms-file-item-name">' + escHtml(f.name) + '</span>' +
+                        '<span class="ms-file-item-size">' + f.size + '</span>' +
+                        '<button class="ms-file-item-remove" onclick="MediaStudio.removeFile(' + f.id + ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+                        '</div>';
+                    }).join('');
+                    updateCommand();
+                  }
+
+                  function toggleFile(id) {
+                    state.files.forEach(function (f) { if (f.id === id) f.checked = !f.checked; });
+                    updateCommand();
+                  }
+
+                  function removeFile(id) {
+                    state.files = state.files.filter(function (f) { return f.id !== id; });
+                    renderFileList();
+                  }
+
+                  function guessKind(name) {
+                    var ext = (name.split('.').pop() || '').toLowerCase();
+                    if (['mp3', 'wav', 'aac', 'flac', 'ogg', 'm4a'].indexOf(ext) !== -1) return 'audio';
+                    if (['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif', 'tiff'].indexOf(ext) !== -1) return 'image';
+                    return 'video';
+                  }
+
+                  function fmtBytes(n) {
+                    if (n > 1e9) return (n / 1e9).toFixed(1) + ' GB';
+                    if (n > 1e6) return (n / 1e6).toFixed(1) + ' MB';
+                    if (n > 1e3) return (n / 1e3).toFixed(1) + ' KB';
+                    return n + ' B';
+                  }
+
+                  // 🔴 NEW: Electron Native File Picker (আসল ফাইল লোকেশন পাবে)
+                  async function importFiles() {
+                    if (typeof require !== 'undefined') {
+                      const { ipcRenderer } = require('electron');
+                      const fs = require('fs');
+                      try {
+                        const filePaths = await ipcRenderer.invoke('dialog:openFiles');
+                        if (filePaths && filePaths.length > 0) {
+                          filePaths.forEach(filePath => {
+                            const stats = fs.statSync(filePath);
+                            const fileName = filePath.split('\\').pop().split('/').pop();
+
+                            // ডুপ্লিকেট ফাইল আটকানো
+                            if (!state.files.find(f => f.absolutePath === filePath)) {
+                              state.files.push({
+                                id: state.nextFileId++,
+                                name: fileName,
+                                absolutePath: filePath, // 🔴 REAL PATH
+                                size: fmtBytes(stats.size),
+                                kind: guessKind(fileName),
+                                checked: true
+                              });
+                              log('info', 'Added file: ' + fileName);
+                            }
+                          });
+                          renderFileList();
+                          updateCommand();
+                        }
+                      } catch (err) {
+                        log('error', 'Could not open file dialog.');
+                      }
+                    }
+                  }
+
+                  // নতুন প্রোডাকশন-রেডি কোড:
+                  async function browseOutputFolder() {
+                    if (typeof require !== 'undefined') {
+                      const { ipcRenderer } = require('electron');
+                      // main.js এর আসল উইন্ডোজ ফোল্ডার পিকার কল করা হচ্ছে
+                      const filePaths = await ipcRenderer.invoke('dialog:openFolder');
+                      if (filePaths && filePaths.length > 0) {
+                        state.outputFolder = filePaths[0];
+                        document.getElementById('msOutputFolder').textContent = state.outputFolder;
+                        saveQueueState(); // নতুন ফোল্ডার অটো-সেভ হবে
+
+                        // PowerShell কনসোলের পাথও আপডেট করে দেওয়া
+                        const psPrompt = document.getElementById('msConsolePrompt');
+                        if (psPrompt) {
+                          psPrompt.innerHTML = `PS ${state.outputFolder}&gt; <span class="ms-console-cursor"></span>`;
+                        }
+                      }
+                    }
+                  }
+
+                  /* ---------------------------------------------------------------
+                     CONSOLE
+                  --------------------------------------------------------------- */
+                  var CONSOLE_MAX_LINES = 100;
+                  var CONSOLE_BOTTOM_THRESHOLD = 28;
+
+                  function isConsoleAtBottom(el) {
+                    return (el.scrollHeight - el.scrollTop - el.clientHeight) <= CONSOLE_BOTTOM_THRESHOLD;
+                  }
+
+                  function log(tag, text) {
+                    var el = document.getElementById('msConsole');
+                    if (!el) return;
+                    var prompt = document.getElementById('msConsolePrompt');
+                    var wasAtBottom = isConsoleAtBottom(el);
+
+                    var row = document.createElement('div');
+                    row.className = 'console-line';
+                    row.innerHTML = '<span class="console-time">' + fmtTime() + '</span><span class="console-tag ' + tag + '">' + tag.toUpperCase() + '</span><span class="console-text"></span>';
+                    // 🔴 .textContent এর বদলে .innerHTML দেওয়া হলো যাতে HTML কালার ট্যাগ সাপোর্ট করে
+                    row.querySelector('.console-text').innerHTML = text;
+                    if (prompt) el.insertBefore(row, prompt); else el.appendChild(row);
+
+                    var lines = el.querySelectorAll('.console-line');
+                    var overflowCount = lines.length - CONSOLE_MAX_LINES;
+                    for (var i = 0; i < overflowCount; i++) {
+                      lines[i].remove();
+                    }
+
+                    if (wasAtBottom) {
+                      el.scrollTop = el.scrollHeight;
+                    }
+                  }
+
+                  function clearConsole() {
+                    var el = document.getElementById('msConsole');
+                    if (!el) return;
+                    var lines = el.querySelectorAll('.console-line');
+                    lines.forEach(function (l) { l.remove(); });
+                  }
+
+                  /* ---------------------------------------------------------------
+                     QUEUE / EXECUTION
+                  --------------------------------------------------------------- */
+                  // ==========================================
+                  // 🔴 AUTO-SAVE & CRASH RECOVERY LOGIC
+                  // ==========================================
+                  function saveQueueState() {
+                    localStorage.setItem('ms_queue_state', JSON.stringify({
+                      queue: state.queue,
+                      outputFolder: state.outputFolder,
+                      nextJobId: state.nextJobId
+                    }));
+                  }
+
+                  function loadQueueState() {
+                    try {
+                      var saved = localStorage.getItem('ms_queue_state');
+                      if (saved) {
+                        var parsed = JSON.parse(saved);
+                        if (parsed.queue) state.queue = parsed.queue;
+                        if (parsed.outputFolder) state.outputFolder = parsed.outputFolder;
+                        if (parsed.nextJobId) state.nextJobId = parsed.nextJobId;
+
+                        // কারেন্ট যাওয়ার সময় যেটা রানিং ছিল, সেটাকে 'waiting' করে দিলাম, যাতে আবার রান করা যায়
+                        var needsSave = false;
+                        state.queue.forEach(function (j) {
+                          if (j.status === 'running') {
+                            j.status = 'waiting';
+                            j.progress = 0;
+                            needsSave = true;
+                          }
+                        });
+                        if (needsSave) saveQueueState();
+                      }
+                    } catch (e) { }
+                  }
+
+                  // স্ক্রিপ্ট লোড হওয়ার সাথে সাথেই আগের ডাটা রিস্টোর করবে
+                  loadQueueState();
+
+                  // ==========================================
+                  // 🔴 ORIGINAL FUNCTIONS (UPDATED WITH SAVE & IPC)
+                  // ==========================================
+                  function queueCounts() {
+                    var c = { waiting: 0, running: 0, completed: 0, failed: 0 };
+                    state.queue.forEach(function (j) { c[j.status]++; });
+                    return c;
+                  }
+
+                  function updateReadouts() {
+                    var c = queueCounts();
+                    document.getElementById('msQueueChip').textContent = state.queue.length + ' in queue';
+                    document.getElementById('msQueueReadout').textContent = c.waiting + ' waiting · ' + c.running + ' running';
+                    var statusEl = document.getElementById('msStatusReadout');
+                    var dot = document.getElementById('msStatusDot');
+                    if (state.isRunning && !state.isPaused) {
+                      statusEl.className = 'readout-value state-running'; statusEl.innerHTML = '<span class="chip-dot connecting" id="msStatusDot"></span>Running';
+                    } else if (state.isPaused) {
+                      statusEl.className = 'readout-value state-paused'; statusEl.innerHTML = '<span class="chip-dot" id="msStatusDot"></span>Paused';
+                    } else if (c.waiting === 0 && c.running === 0 && state.queue.length > 0) {
+                      statusEl.className = 'readout-value state-complete'; statusEl.innerHTML = '<span class="chip-dot connected" id="msStatusDot"></span>Complete';
+                    } else {
+                      statusEl.className = 'readout-value state-idle'; statusEl.innerHTML = '<span class="chip-dot" id="msStatusDot"></span>Idle';
+                    }
+                    document.getElementById('msPauseBtn').disabled = !state.isRunning;
+                    document.getElementById('msPauseBtn').querySelector('span').textContent = state.isPaused ? 'Resume' : 'Pause';
+                  }
+
+                  function statusPillHtml(status) {
+                    var label = status.charAt(0).toUpperCase() + status.slice(1);
+                    return '<span class="status-pill ' + status + '">' + label + '</span>';
+                  }
+
+                  function renderQueue() {
+                    var el = document.getElementById('msQueueList');
+                    if (!el) return;
+                    if (state.queue.length === 0) {
+                      el.innerHTML = '<div class="ms-queue-empty-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>No jobs yet — add one from the operation builder above.</div>';
+                      updateReadouts();
+                      return;
+                    }
+                    var fillColor = { running: 'var(--accent-primary)', waiting: 'var(--text-tertiary)', completed: 'var(--color-success)', failed: 'var(--color-error)' };
+                    el.innerHTML = state.queue.slice().reverse().map(function (j) {
+                      var actions = '';
+                      if (j.status === 'failed') {
+                        actions += '<button class="ms-queue-row-btn" data-tooltip="Retry" onclick="MediaStudio.retryJob(' + j.id + ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 2.8-6.5"/><path d="M3 4v5h5"/></svg></button>';
+                      }
+                      if (j.status === 'waiting' || j.status === 'failed' || j.status === 'completed') {
+                        actions += '<button class="ms-queue-row-btn" data-tooltip="Remove" onclick="MediaStudio.removeJob(' + j.id + ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+                      }
+                      return '<div class="ms-queue-row" data-status="' + j.status + '">' +
+                        '<span class="ms-queue-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + fileIcon(j.kind) + '</svg></span>' +
+                        '<div class="ms-queue-row-main"><div class="ms-queue-row-name">' + escHtml(j.fileName) + '</div><div class="ms-queue-row-sub">' + escHtml(j.opLabel) + '</div></div>' +
+                        '<div class="ms-queue-row-progress"><div class="progress-track"><div class="progress-fill" style="width:' + j.progress + '%; background:' + fillColor[j.status] + ';"></div></div><span class="ms-queue-row-pct">' + j.progress + '%</span></div>' +
+                        statusPillHtml(j.status) +
+                        '<div class="ms-queue-row-actions">' + actions + '</div>' +
+                        '</div>';
+                    }).join('');
+                    updateReadouts();
+                  }
+
+                  function buildJobsFromSelection() {
+                    var op = findOp(state.activeOp);
+                    var checked = state.files.filter(function (f) { return f.checked; });
+                    if (checked.length === 0) { log('error', 'No input files selected — check at least one file first.'); return []; }
+                    return checked.map(function (f) {
+                      // আগের কোড:
+                      // var cmd = op.build(state.values, f.name, checked.map(function (x) { return x.name; }));
+
+                      // নতুন কোড:
+                      var cmd = op.build(state.values, f.absolutePath, checked.map(function (x) { return x.absolutePath; }));
+                      return { id: state.nextJobId++, fileName: f.name, kind: f.kind, opLabel: op.label, command: cmd, status: 'waiting', progress: 0 };
+                    });
+                  }
+
+                  function addToQueue() {
+                    var jobs = buildJobsFromSelection();
+                    if (!jobs.length) return;
+                    jobs.forEach(function (j) {
+                      state.queue.push(j);
+                      log('waiting', 'Queued "' + j.opLabel + '" → ' + j.fileName);
+                    });
+                    renderQueue();
+                    saveQueueState(); // 🔴 Auto Save
+                    processQueue();
+                  }
+
+                  function runNow() {
+                    var jobs = buildJobsFromSelection();
+                    if (!jobs.length) return;
+                    jobs.forEach(function (j) { state.queue.push(j); });
+                    renderQueue();
+                    saveQueueState(); // 🔴 Auto Save
+                    log('sent', 'Run requested for ' + jobs.length + ' file(s). Executing real FFmpeg...');
+
+                    var btn = document.getElementById('msRunBtn');
+                    if (btn && !btn.classList.contains('is-loading')) {
+                      var original = btn.innerHTML;
+                      btn.classList.add('is-loading');
+                      btn.innerHTML = '<svg class="btn-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9"/></svg><span>Starting…</span>';
+                      setTimeout(function () {
+                        btn.classList.remove('is-loading');
+                        btn.innerHTML = original;
+                        processQueue();
+                      }, 480);
+                    } else {
+                      processQueue();
+                    }
+                  }
+
+                  function processQueue() {
+                    if (state.isPaused) return;
+                    if (state.isRunning) return;
+                    var next = state.queue.filter(function (j) { return j.status === 'waiting'; })[0];
+                    if (!next) { state.isRunning = false; updateReadouts(); return; }
+
+                    state.isRunning = true;
+                    next.status = 'running';
+                    renderQueue();
+                    saveQueueState(); // 🔴 Auto Save
+
+                    log('sent', 'CMD  ' + next.command);
+                    log('info', 'Executing Real FFmpeg Engine for Job #' + next.id);
+
+                    // 🔴 REAL IPC FFMPEG TRIGGER
+                    if (typeof require !== 'undefined') {
+                      const { ipcRenderer } = require('electron');
+                      ipcRenderer.send('run-media-studio-ffmpeg', {
+                        jobId: next.id,
+                        command: next.command,
+                        outputFolder: state.outputFolder
+                      });
+                    } else {
+                      log('error', 'Electron IPC not available. Cannot run FFmpeg.');
+                      state.isRunning = false;
+                    }
+                  }
+
+                  function pauseQueue() {
+                    state.isPaused = !state.isPaused;
+                    log('info', state.isPaused ? 'Queue paused.' : 'Queue resumed.');
+                    updateReadouts();
+                    if (!state.isPaused) processQueue();
+                  }
+
+                  function resetQueue() {
+                    state.queue = [];
+                    state.isRunning = false;
+                    state.isPaused = false;
+                    renderQueue();
+                    saveQueueState();
+                    log('info', 'Queue and memory cleared.');
+
+                    // 🔴 FIX 3: Queue ক্লিয়ার করার সাথে সাথে ব্যাকগ্রাউন্ডের FFmpeg প্রসেসকেও স্টপ সিগন্যাল পাঠানো
+                    if (typeof require !== 'undefined') {
+                      const { ipcRenderer } = require('electron');
+                      ipcRenderer.send('stop-media-studio-ffmpeg');
+                    }
+                  }
+
+                  function retryJob(id) {
+                    state.queue.forEach(function (j) { if (j.id === id) { j.status = 'waiting'; j.progress = 0; } });
+                    renderQueue();
+                    saveQueueState(); // 🔴 Auto Save
+                    processQueue();
+                  }
+
+                  function retryFailed() {
+                    var any = false;
+                    state.queue.forEach(function (j) { if (j.status === 'failed') { j.status = 'waiting'; j.progress = 0; any = true; } });
+                    if (any) {
+                      renderQueue();
+                      saveQueueState(); // 🔴 Auto Save
+                      processQueue();
+                    }
+                  }
+
+                  function removeJob(id) {
+                    state.queue = state.queue.filter(function (j) { return j.id !== id; });
+                    renderQueue();
+                    saveQueueState(); // 🔴 Auto Save
+                  }
+
+                  // ==========================================
+                  // 🔴 IPC LISTENERS FOR REAL FFMPEG
+                  // ==========================================
+                  if (typeof require !== 'undefined' && !window.msIpcLoaded) {
+                    window.msIpcLoaded = true; // Ensures listeners are added only once
+                    const { ipcRenderer, shell } = require('electron');
+
+                    ipcRenderer.on('ms-ffmpeg-missing', (event, data) => {
+                      log('error', '⚠️ FFmpeg is not installed or not added to System PATH!');
+                      log('info', 'Redirecting to the official FFmpeg download page...');
+
+                      var job = state.queue.find(function (j) { return j.id === data.jobId; });
+                      if (job) {
+                        job.status = 'failed';
+                        renderQueue();
+                        saveQueueState();
+                      }
+                      state.isRunning = false;
+                      shell.openExternal('https://ffmpeg.org/download.html#build-windows');
+                    });
+
+                    ipcRenderer.on('ms-console-log', (event, data) => {
+                      log(data.type || 'info', data.text);
+                    });
+
+                    ipcRenderer.on('ms-job-progress', (event, data) => {
+                      var job = state.queue.find(function (j) { return j.id === data.jobId; });
+                      if (job && job.status === 'running') {
+                        // Smooth progress increment
+                        if (job.progress < 95) job.progress += 2;
+                        renderQueue();
+                        saveQueueState();
+                      }
+                    });
+
+                    ipcRenderer.on('ms-job-complete', (event, data) => {
+                      var job = state.queue.find(function (j) { return j.id === data.jobId; });
+                      if (job) {
+                        job.status = data.success ? 'completed' : 'failed';
+                        job.progress = data.success ? 100 : job.progress;
+
+                        if (data.success) {
+                          var outPath = state.outputFolder + '\\' + job.fileName.replace(/\.[^/.]+$/, '') + '_out.mp4';
+                          log('completed', 'Done → ' + outPath);
+                          document.getElementById('msLastOutputRow').style.display = '';
+                          document.getElementById('msLastOutputPath').textContent = outPath;
+                        } else {
+                          log('error', 'FFmpeg Process Failed or Interrupted.');
+                        }
+                        saveQueueState();
+                      }
+
+                      state.isRunning = false;
+                      renderQueue();
+
+                      // Auto-start next job
+                      setTimeout(processQueue, 500);
+                    });
+                  }
+
+                  function clearCompleted() {
+                    state.queue = state.queue.filter(function (j) { return j.status !== 'completed'; });
+                    renderQueue();
+                  }
+
+                  /* ---------------------------------------------------------------
+                     INIT
+                  --------------------------------------------------------------- */
+                  function init() {
+                    renderOpStrip();
+                    renderForm();
+                    renderFileList();
+                    renderQueue();
+                    positionCatIndicator(true);
+                    log('ready', 'Media Studio ready. FFmpeg 6.1 detected on PATH.');
+                  }
+
+                  if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                  } else {
+                    init();
+                  }
+
+                  window.MediaStudio = {
+                    setCategory: setCategory,
+                    selectOp: selectOp,
+                    onFieldChange: onFieldChange,
+                    onRangeInput: onRangeInput,
+                    onSegmentChange: onSegmentChange,
+                    onPresetChange: onPresetChange,
+                    positionCatIndicator: positionCatIndicator,
+                    positionAllSegmentIndicators: positionAllSegmentIndicators,
+                    browseAuxFile: browseAuxFile,
+                    resetForm: resetForm,
+                    copyCommand: copyCommand,
+                    importFiles: importFiles,
+                    toggleFile: toggleFile,
+                    removeFile: removeFile,
+                    browseOutputFolder: browseOutputFolder,
+                    addToQueue: addToQueue,
+                    runNow: runNow,
+                    pauseQueue: pauseQueue,
+                    resetQueue: resetQueue,
+                    retryJob: retryJob,
+                    retryFailed: retryFailed,
+                    removeJob: removeJob,
+                    clearCompleted: clearCompleted,
+                    clearConsole: clearConsole
+                  };
+                })();
+              </script>
+              <script>
+                // Keep Media Studio's sliding indicators (category tabs, segmented
+                // fields) correctly positioned. Needed because this page starts
+                // display:none — offsetLeft/offsetWidth read as 0 while hidden, so
+                // positions must be recomputed the moment switchPage() reveals it.
+                (function () {
+                  var target = document.getElementById('page-media-studio');
+                  if (!target) return;
+
+                  function reposition() {
+                    if (!window.MediaStudio) return;
+                    window.MediaStudio.positionCatIndicator(true);
+                    window.MediaStudio.positionAllSegmentIndicators();
+                  }
+
+                  if (window.MutationObserver) {
+                    var lastVisible = target.style.display !== 'none';
+                    var mo = new MutationObserver(function () {
+                      var isVisible = target.style.display !== 'none';
+                      if (isVisible && !lastVisible) reposition();
+                      lastVisible = isVisible;
+                    });
+                    mo.observe(target, { attributes: true, attributeFilter: ['style'] });
+                  }
+
+                  var resizeTimer = null;
+                  window.addEventListener('resize', function () {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(reposition, 80);
+                  });
+                })();
+              </script>
+            </div>
 
             <!-- ========================================================================== -->
             <!-- PAGE: AI WORKSPACE                                                         -->
@@ -6002,7 +8721,7 @@
               </div>
             </div>
 
-            <!-- 3. Help / Documentation Modal (ADVANCED) -->
+            <!-- 3. Help / Documentation Modal (DYNAMIC) -->
             <div id="helpModal"
               style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
               <div
@@ -6020,81 +8739,10 @@
                   </div>
                 </h3>
 
-                <div
+                <!-- 🔴 DYNAMIC LIST CONTAINER -->
+                <div id="dynamicHelpContent"
                   style="max-height: 450px; overflow-y: auto; padding-right: 15px; margin-top: 15px; font-size: 13px; color: #b0b0b0; line-height: 1.6;">
-
-                  <!-- Developer Info & WhatsApp Link -->
-                  <div
-                    style="background: rgba(201,154,91,0.05); border: 1px solid rgba(201,154,91,0.2); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                      <h4 style="color: var(--accent-primary); margin: 0 0 5px 0; font-size: 15px;">Creator Engine Pro
-                        v1.0</h4>
-                      <p style="margin: 0 0 4px 0; color: #fff;"><strong>Developer:</strong> Atawur Rahman</p>
-                      <p style="margin: 0; font-size: 12px;">Built for automated multi-agent workflows.</p>
-                    </div>
-                    <a href="https://wa.me/8801950265366" target="_blank"
-                      style="background: #25D366; color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: 0.2s;">
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                        <path
-                          d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.305-.88-.653-1.473-1.46-1.646-1.757-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
-                      </svg>
-                      Feedback / Updates
-                    </a>
-                  </div>
-
-                  <!-- How it works -->
-                  <h4 style="color: #fff; margin-bottom: 8px; font-size: 14px;">🏗️ AI Roles & Architecture</h4>
-                  <p style="margin-bottom: 12px;">This application uses a strict <b>Tag Routing System</b>. The AIs
-                    have
-                    specific
-                    rules on who they can communicate with:</p>
-                  <ul style="padding-left: 20px; margin-top: 0; margin-bottom: 15px;">
-                    <li><b style="color: #ffb74d;">@administrator</b>: The orchestrator. It manages tasks, decides
-                      which
-                      worker to
-                      use, and sends the final output to the Editor.</li>
-                    <li><b style="color: #64b5f6;">Worker AIs (@chatgpt, @gemini, etc)</b>: They do the hard work.
-                      They
-                      can ONLY
-                      communicate back to the <code>@administrator</code>.</li>
-                    <li><b style="color: #e91e63;">@final</b>: The Editor. It reviews the Administrator's compiled
-                      data,
-                      formats
-                      it perfectly, and outputs it to you.</li>
-                  </ul>
-
-                  <!-- System Recording -->
-                  <h4 style="color: #e57373; margin-bottom: 8px; font-size: 14px;">🎙️ "System Recording" Switch</h4>
-                  <p style="margin-bottom: 8px;">To prevent AIs from talking to each other automatically before they
-                    know their
-                    jobs, use this switch:</p>
-                  <ul style="padding-left: 20px; margin-top: 0; margin-bottom: 15px;">
-                    <li style="margin-bottom: 6px;"><strong>🔴 OFF (Warm-up Mode):</strong> The Master Router pauses.
-                      Your
-                      messages are sent directly to the selected AI, but their responses are <b>ignored</b> by the
-                      system. Use
-                      this to train them!</li>
-                    <li><strong>🟢 ON (Active Routing):</strong> The loop starts. If an AI uses a tag (e.g.,
-                      <code>@chatgpt</code>), the message is instantly routed to that AI's inbox automatically.
-                    </li>
-                  </ul>
-
-                  <!-- Training Guide -->
-                  <h4 style="color: #4CAF50; margin-bottom: 8px; font-size: 14px;">🧠 How to Train Your AIs
-                    (Step-by-Step)</h4>
-                  <div
-                    style="background: #141418; padding: 12px; border-radius: 6px; border: 1px left solid #4CAF50; margin-bottom: 12px;">
-                    <ol style="padding-left: 20px; margin: 0; color: #d0d0d0;">
-                      <li style="margin-bottom: 8px;">Turn <b>System Recording OFF</b>.</li>
-                      <li style="margin-bottom: 8px;">Select <b>Administrator</b> and send its master prompt (e.g.,
-                        "Act
-                        as the
-                        Master Orchestrator..."). Wait for it to confirm.</li>
-                      <li style="margin-bottom: 8px;">Select <b>Final</b> and send its formatting rules (e.g., "Act as
-                        the Editor.
-                        Always end with @admin..."). Wait for it to confirm.</li>
-                      <li>Turn <b>System Recording ON</b>. Now give your actual task to the Administrator!</li>
-                    </ol>
+                  <div style="text-align: center; padding: 20px; color: var(--text-tertiary);">Loading documentation...
                   </div>
                 </div>
 
@@ -6129,7 +8777,7 @@
                         <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 500;">Software Update</h4>
                         <span id="updateStatusText"
                           style="font-size: 12px; color: var(--text-tertiary); display: block;">Current Version:
-                          v1.0.0</span>
+                          v1.1.0</span>
                       </div>
                       <div style="display: flex; gap: 8px;">
                         <!-- 🔴 New Versions Button -->

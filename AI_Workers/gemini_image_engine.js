@@ -16,6 +16,7 @@ if (!fs.existsSync(ACCOUNTS_DIR)) fs.mkdirSync(ACCOUNTS_DIR, { recursive: true }
 
 let browser, context, page;
 let isRunning = false;
+let isPaused = false;
 let waitForUserPromise = null;
 
 function sendLog(type, text) {
@@ -102,7 +103,7 @@ const DOWNLOAD_URLS = {
     firefox: 'https://www.mozilla.org/firefox/new/'
 };
 
-async function startAutomation(prompts) {
+async function startAutomation(prompts, startIndex = 0) {
     if (isRunning) return;
     isRunning = true;
 
@@ -211,7 +212,7 @@ async function startAutomation(prompts) {
         const allTabs = context.pages();
         if (allTabs.length > 0) {
             page = allTabs.find(p => p.url().includes('google.com')) || allTabs[allTabs.length - 1];
-            try { await page.bringToFront(); } catch(e){} // ট্যাবটিকে সামনে নিয়ে আসা
+            try { await page.bringToFront(); } catch(e){} // ট্যাবটিকে সামনে নিয়ে আসা
         }
 
         sendLog('ready', '▶️ Resume signal received! Starting automation...');
@@ -219,8 +220,14 @@ async function startAutomation(prompts) {
 
         let sessionPromptCount = 0;
 
-        for (let i = 0; i < prompts.length; i++) {
+        for (let i = startIndex; i < prompts.length; i++) {
             if (!isRunning) break; 
+
+            // 🔴 MAGIC PAUSE LOCK: উইন্ডো খোলা থাকবে, কিন্তু পজ করা হলে লুপটি এখানেই আটকে থাকবে!
+            while (isPaused && isRunning) {
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            if (!isRunning) break;
 
             const currentPrompt = prompts[i];
             
@@ -237,7 +244,7 @@ async function startAutomation(prompts) {
             await page.keyboard.press('Backspace');
             await randomDelay(300, 600);
 
-            sendLog('typing', `Typing prompt...`);
+            sendLog('generating', `Pasting prompt stealthily...`);
             
             await page.evaluate((text) => {
                 const textarea = document.createElement('textarea');
@@ -289,16 +296,25 @@ async function startAutomation(prompts) {
 
 process.on('message', async (msg) => {
     if (msg.type === 'start') {
-        startAutomation(msg.prompts);
+        startAutomation(msg.prompts, msg.startIndex);
+    } else if (msg.type === 'pause') {
+        isPaused = true;
+        sendLog('waiting', '⏸️ Automation Paused. Waiting for resume signal...');
     } else if (msg.type === 'resume') {
+        isPaused = false;
         if (waitForUserPromise) {
             waitForUserPromise();
             waitForUserPromise = null;
         }
+        sendLog('ready', '▶️ Resuming automation...');
     } else if (msg === 'shutdown' || msg.type === 'stop') {
         isRunning = false;
+        isPaused = false;
         sendLog('info', 'Shutting down engine...');
-        try { if (page) await page.close(); if (context) await context.close(); } catch(e){}
+        try {
+            if (page) await page.close();
+            if (context) await context.close();
+        } catch (e) {}
         process.exit(0);
     }
 });

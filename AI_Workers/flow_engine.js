@@ -2,23 +2,24 @@
 // FILE: AI_Workers/flow_engine.js
 // ==========================================
 
-const { chromium, firefox } = require('playwright-extra'); 
+const { chromium, firefox } = require('playwright-extra');
 const stealth = require('puppeteer-extra-plugin-stealth')();
-chromium.use(stealth); 
+chromium.use(stealth);
 
 const fs = require('fs');
 const path = require('path');
 const MASTER_DIR = path.join(__dirname, '..', 'Master_Controller');
-const INPUT_SELECTOR = (() => { try { return JSON.parse(fs.readFileSync(path.join(MASTER_DIR, 'ai_selectors.json'))).flow.chatBox; } catch(e) { return 'div[role="textbox"]'; } })();
+const INPUT_SELECTOR = (() => { try { return JSON.parse(fs.readFileSync(path.join(MASTER_DIR, 'ai_selectors.json'))).flow.chatBox; } catch (e) { return 'div[role="textbox"]'; } })();
 
 const profileName = process.argv[2] || 'Normal_Browser';
-const browserChoice = process.argv[3] || 'chrome'; 
+const browserChoice = process.argv[3] || 'chrome';
 const ACCOUNTS_DIR = path.join(__dirname, '..', 'Accounts', profileName);
 
 if (!fs.existsSync(ACCOUNTS_DIR)) fs.mkdirSync(ACCOUNTS_DIR, { recursive: true });
 
 let browser, context, page;
 let isRunning = false;
+let isPaused = false;
 let waitForUserPromise = null;
 
 function sendLog(type, text) {
@@ -33,8 +34,8 @@ function sendStatus(state, data = {}) {
 const randomDelay = (min, max) => new Promise(resolve => setTimeout(resolve, Math.random() * (max - min) + min));
 
 function getBrowserExecutablePath(browserName) {
-    const platform = process.platform; 
-    const userProfile = process.env.USERPROFILE || ''; 
+    const platform = process.platform;
+    const userProfile = process.env.USERPROFILE || '';
     const localAppData = process.env.LOCALAPPDATA || '';
     const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
     const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
@@ -63,12 +64,12 @@ function getBrowserExecutablePath(browserName) {
         },
         vivaldi: {
             win32: [
-                `${localAppData}\\Vivaldi\\Application\\vivaldi.exe`, 
+                `${localAppData}\\Vivaldi\\Application\\vivaldi.exe`,
                 `${programFiles}\\Vivaldi\\Application\\vivaldi.exe`
             ],
             darwin: ['/Applications/Vivaldi.app/Contents/MacOS/Vivaldi']
         },
-        tor: { 
+        tor: {
             win32: [
                 `${userProfile}\\Desktop\\Tor Browser\\Browser\\firefox.exe`,
                 `${userProfile}\\OneDrive\\Desktop\\Tor Browser\\Browser\\firefox.exe`,
@@ -79,7 +80,7 @@ function getBrowserExecutablePath(browserName) {
             ],
             darwin: ['/Applications/Tor Browser.app/Contents/MacOS/firefox']
         },
-        firefox: { 
+        firefox: {
             win32: [
                 `${programFiles}\\Mozilla Firefox\\firefox.exe`,
                 `${programFilesX86}\\Mozilla Firefox\\firefox.exe`,
@@ -94,7 +95,7 @@ function getBrowserExecutablePath(browserName) {
             if (fs.existsSync(p)) return p;
         }
     }
-    return undefined; 
+    return undefined;
 }
 
 const DOWNLOAD_URLS = {
@@ -105,13 +106,13 @@ const DOWNLOAD_URLS = {
     firefox: 'https://www.mozilla.org/firefox/new/'
 };
 
-async function startAutomation(prompts) {
+async function startAutomation(prompts, startIndex = 0) {
     if (isRunning) return;
     isRunning = true;
 
     try {
         sendLog('info', `🚀 Launching Google Flow on Profile: [${profileName}] via [${browserChoice.toUpperCase()}]`);
-        
+
         const bName = browserChoice.toLowerCase();
 
         if (['brave', 'opera', 'vivaldi', 'tor', 'firefox'].includes(bName)) {
@@ -119,7 +120,7 @@ async function startAutomation(prompts) {
             if (!customPath) {
                 sendLog('error', `⚠️ ${bName.toUpperCase()} is not installed on your PC!`);
                 sendLog('info', `Redirecting to the official download page...`);
-                
+
                 try {
                     const tempBrowser = await chromium.launch({ channel: 'chrome', headless: false, args: ['--start-maximized'] });
                     const tempPage = await tempBrowser.newPage();
@@ -129,21 +130,21 @@ async function startAutomation(prompts) {
                     const tempPageEdge = await tempBrowserEdge.newPage();
                     await tempPageEdge.goto(DOWNLOAD_URLS[bName]);
                 }
-                
+
                 sendStatus('idle');
                 isRunning = false;
-                return; 
+                return;
             }
         }
 
         const PORTS_FILE = path.join(MASTER_DIR, 'active_ports.json');
         let targetPort = 9222;
-        
+
         try {
             if (fs.existsSync(PORTS_FILE)) {
                 let portsData = JSON.parse(fs.readFileSync(PORTS_FILE, 'utf8'));
                 if (portsData[profileName]) {
-                    targetPort = portsData[profileName]; 
+                    targetPort = portsData[profileName];
                 } else {
                     const usedPorts = Object.values(portsData);
                     targetPort = usedPorts.length > 0 ? Math.max(...usedPorts) + 1 : 9222;
@@ -153,10 +154,10 @@ async function startAutomation(prompts) {
             } else {
                 fs.writeFileSync(PORTS_FILE, JSON.stringify({ [profileName]: 9222 }, null, 4));
             }
-        } catch(e) {}
+        } catch (e) { }
 
         const endpoint = `http://127.0.0.1:${targetPort}`;
-        
+
         try {
             sendLog('connect', `Checking for existing Browser on Port ${targetPort}...`);
             if (bName !== 'firefox' && bName !== 'tor') {
@@ -169,14 +170,14 @@ async function startAutomation(prompts) {
             }
         } catch (cdpError) {
             sendLog('connect', `Launching new ${browserChoice.toUpperCase()} window...`);
-            
+
             let launchConfig = {
                 headless: false,
                 viewport: null,
                 ignoreDefaultArgs: ["--enable-automation"],
                 args: [
                     `--remote-debugging-port=${targetPort}`,
-                    '--start-maximized', 
+                    '--start-maximized',
                     '--disable-blink-features=AutomationControlled',
                     '--no-sandbox',
                     '--disable-infobars'
@@ -192,10 +193,10 @@ async function startAutomation(prompts) {
                 if (bName === 'edge') launchConfig.channel = 'msedge';
                 else if (bName === 'chrome') launchConfig.channel = 'chrome';
                 else if (['brave', 'opera', 'vivaldi'].includes(bName)) launchConfig.executablePath = getBrowserExecutablePath(bName);
-                
+
                 context = await chromium.launchPersistentContext(ACCOUNTS_DIR, launchConfig);
             }
-            
+
             page = context.pages()[0] || (await context.newPage());
         }
 
@@ -205,15 +206,15 @@ async function startAutomation(prompts) {
         await page.goto('https://labs.google/fx/tools/flow', { waitUntil: 'domcontentloaded' });
 
         sendLog('waiting', '🛑 ACTION REQUIRED: ব্রাউজারে লগইন করুন এবং প্রজেক্ট সিলেক্ট করুন। রেডি হলে ড্যাশবোর্ড থেকে "Resume" বাটনে ক্লিক করুন!');
-        sendStatus('paused'); 
-        
+        sendStatus('paused');
+
         await new Promise(resolve => { waitForUserPromise = resolve; });
-        
+
         // 🔴 MAGIC FIX: ইউজার নতুন ট্যাব খুললেও যেন ইঞ্জিন ক্র্যাশ না করে
         const allTabs = context.pages();
         if (allTabs.length > 0) {
             page = allTabs.find(p => p.url().includes('google.com')) || allTabs[allTabs.length - 1];
-            try { await page.bringToFront(); } catch(e){} // ট্যাবটিকে সামনে নিয়ে আসা
+            try { await page.bringToFront(); } catch (e) { } // ট্যাবটিকে সামনে নিয়ে আসা
         }
 
         sendLog('ready', '▶️ Resume signal received! Starting video generation...');
@@ -221,8 +222,14 @@ async function startAutomation(prompts) {
 
         let sessionPromptCount = 0;
 
-        for (let i = 0; i < prompts.length; i++) {
-            if (!isRunning) break; 
+        for (let i = startIndex; i < prompts.length; i++) {
+            if (!isRunning) break;
+
+            // 🔴 MAGIC PAUSE LOCK: উইন্ডো খোলা থাকবে, কিন্তু পজ করা হলে লুপটি এখানেই আটকে থাকবে!
+            while (isPaused && isRunning) {
+                await new Promise(r => setTimeout(r, 1000));
+            }
+            if (!isRunning) break;
 
             const currentPrompt = prompts[i];
             sendLog('progress', `--- 🎨 Processing Prompt ${i + 1} of ${prompts.length} ---`);
@@ -235,8 +242,20 @@ async function startAutomation(prompts) {
             await promptBox.fill('');
             await randomDelay(300, 600);
 
-            sendLog('generating', `Typing prompt...`);
-            await promptBox.pressSequentially(currentPrompt, { delay: 5 });
+            sendLog('generating', `Pasting prompt stealthily...`);
+
+            // 🔴 ফাস্ট এবং 100% বট-প্রুফ কপি-পেস্ট ইনজেকশন
+            await page.evaluate((text) => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }, currentPrompt);
+
+            await promptBox.click({ force: true });
+            await page.keyboard.press('Control+V');
             await randomDelay(800, 1500);
 
             const initialVideoCount = await page.evaluate(() => {
@@ -244,7 +263,7 @@ async function startAutomation(prompts) {
                     let count = 0;
                     root.querySelectorAll('*').forEach(el => {
                         if (el.tagName === 'VIDEO') count++;
-                        if (el.shadowRoot) count += getVideos(el.shadowRoot); 
+                        if (el.shadowRoot) count += getVideos(el.shadowRoot);
                     });
                     return count;
                 };
@@ -265,7 +284,7 @@ async function startAutomation(prompts) {
                         return count;
                     };
                     return getVideos(document) > initialCount;
-                }, initialVideoCount, { timeout: 420000, polling: 5000 }); 
+                }, initialVideoCount, { timeout: 420000, polling: 5000 });
 
                 sendLog('completed', `🎉 New video generated successfully!`);
             } catch (e) {
@@ -273,7 +292,7 @@ async function startAutomation(prompts) {
             }
 
             sendStatus('progress', { completed: i + 1, total: prompts.length });
-            
+
             sendLog('waiting', `Waiting 5 seconds before next prompt...`);
             await page.waitForTimeout(5000);
 
@@ -298,16 +317,25 @@ async function startAutomation(prompts) {
 
 process.on('message', async (msg) => {
     if (msg.type === 'start') {
-        startAutomation(msg.prompts);
+        startAutomation(msg.prompts, msg.startIndex);
+    } else if (msg.type === 'pause') {
+        isPaused = true;
+        sendLog('waiting', '⏸️ Automation Paused. Waiting for resume signal...');
     } else if (msg.type === 'resume') {
+        isPaused = false;
         if (waitForUserPromise) {
             waitForUserPromise();
             waitForUserPromise = null;
         }
+        sendLog('ready', '▶️ Resuming automation...');
     } else if (msg === 'shutdown' || msg.type === 'stop') {
         isRunning = false;
+        isPaused = false;
         sendLog('info', 'Shutting down engine...');
-        try { if (page) await page.close(); if (context) await context.close(); } catch(e){}
+        try {
+            if (page) await page.close();
+            if (context) await context.close();
+        } catch (e) { }
         process.exit(0);
     }
 });

@@ -108,7 +108,7 @@ const randomDelay = (min, max) => new Promise(resolve => setTimeout(resolve, Mat
                     }
 
                     page.setDefaultTimeout(0); 
-                    await page.goto('https://chatgpt.com/?role=admin', { waitUntil: 'domcontentloaded' });
+                    await page.goto('https://chatgpt.com/g/g-6a60a6d25d108191b5d8689d27c824b1-creator-engine-pro-administrator', { waitUntil: 'domcontentloaded' });
                     await page.bringToFront(); 
                     console.log(`[INFO] ✅ Administrator hooked into the tab successfully!`);
                     

@@ -36,7 +36,11 @@ window.switchPage = function (pageId, navElement, fallbackTitle) {
         const label = navElement.querySelector('.nav-label');
         if (label) title = label.textContent;
     } else {
-        const mapping = { 'page-dashboard': 0, 'page-gemini': 1, 'page-flow': 2, 'page-workspace': 3 };
+        // আগের কোড:
+        // const mapping = { 'page-dashboard': 0, 'page-gemini': 1, 'page-flow': 2, 'page-workspace': 3 };
+
+        // নতুন কোড:
+        const mapping = { 'page-dashboard': 0, 'page-gemini': 1, 'page-flow': 2, 'page-media-studio': 3, 'page-workspace': 4 };
         const items = document.querySelectorAll('.sidebar-nav .nav-item');
         if (items[mapping[pageId]]) {
             items[mapping[pageId]].classList.add('nav-item--active');
@@ -80,31 +84,31 @@ window.flowLogLine = createConsoleLogger('flow-consolePanel');
 // ==========================================
 window.LiveStats = { sessions: 0, images: 0, videos: 0, workflows: 0 };
 
-window.updateDashboardStat = function(statName, value, deltaText, deltaClass) {
+window.updateDashboardStat = function (statName, value, deltaText, deltaClass) {
     const el = document.getElementById(`dash-stat-${statName}`);
     const deltaEl = document.getElementById(`dash-delta-${statName}`);
-    if(el) { el.dataset.countTo = value; el.textContent = value; }
-    if(deltaEl && deltaText) { deltaEl.textContent = deltaText; if(deltaClass) deltaEl.className = `stat-delta ${deltaClass}`; }
+    if (el) { el.dataset.countTo = value; el.textContent = value; }
+    if (deltaEl && deltaText) { deltaEl.textContent = deltaText; if (deltaClass) deltaEl.className = `stat-delta ${deltaClass}`; }
 };
 
-window.addRecentActivity = function(sysName, text, colorVar) {
+window.addRecentActivity = function (sysName, text, colorVar) {
     const list = document.getElementById('dash-activity-list');
-    if(!list) return;
+    if (!list) return;
     const empty = list.querySelector('.popover-empty');
-    if(empty) empty.remove();
+    if (empty) empty.remove();
     const row = document.createElement('div');
     row.className = 'activity-row material-react whisper';
     row.innerHTML = `<span class="system-dot" style="background: var(--${colorVar});"></span><div class="activity-body"><div class="activity-system" style="color: var(--${colorVar});">${sysName}</div><div class="activity-text">${text.replace(/<[^>]*>?/gm, '')}</div></div><span class="activity-time">${nowStamp()}</span>`;
     list.prepend(row);
-    while(list.children.length > 8) list.removeChild(list.lastChild);
+    while (list.children.length > 8) list.removeChild(list.lastChild);
 };
 
-window.updateDashboardSystemStatus = function(id, isConnected) {
+window.updateDashboardSystemStatus = function (id, isConnected) {
     const row = document.getElementById(`dash-status-${id}`);
-    if(!row) return;
+    if (!row) return;
     const dot = row.querySelector('.system-dot');
     const pill = row.querySelector('.status-pill');
-    if(isConnected) {
+    if (isConnected) {
         dot.classList.add('live'); pill.textContent = 'Connected'; pill.className = 'status-pill connected';
     } else {
         dot.classList.remove('live'); pill.textContent = 'Idle'; pill.className = 'status-pill idle';
@@ -122,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 🔴 MAGIC FIX: Notification Logic (100% Electron Safe, No Duplicates)
     // ==========================================
     const notifBadge = document.getElementById('mainNotifBadge');
-              
+
     function updateNotifBadge() {
         const unreadCount = document.querySelectorAll('.notif-item.unread').length;
         if (notifBadge) notifBadge.style.display = unreadCount > 0 ? 'block' : 'none';
@@ -131,10 +135,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const notifItems = document.querySelectorAll('.notif-item');
     notifItems.forEach(item => {
         item.removeAttribute('onclick');
-        
+
         const preview = item.querySelector('.notif-preview');
         const fullBody = item.querySelector('.notif-full-body');
-        
+
         if (fullBody) {
             fullBody.style.maxHeight = '0px';
             fullBody.style.overflow = 'hidden';
@@ -144,10 +148,10 @@ document.addEventListener('DOMContentLoaded', () => {
             fullBody.style.transition = 'all 0.4s ease';
         }
 
-        item.addEventListener('click', function(e) {
-            e.stopPropagation(); 
+        item.addEventListener('click', function (e) {
+            e.stopPropagation();
             const isExpanded = this.classList.contains('expanded');
-            
+
             if (isExpanded) {
                 this.classList.remove('expanded');
                 if (preview) preview.style.display = 'block';
@@ -169,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     fullBody.style.borderTop = '1px solid rgba(255, 255, 255, 0.05)';
                 }
             }
-            
+
             if (this.classList.contains('unread')) {
                 this.classList.replace('unread', 'read');
                 this.style.background = 'transparent';
@@ -199,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateNotifBadge();
         });
     }
-    
+
     updateNotifBadge();
     // ==========================================
 
@@ -308,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 // 🔴 PRO TIP: পাবলিক রিপোর জন্য কোনো টোকেন লাগে না! সরাসরি API কল।
                 const repoUrl = 'https://api.github.com/repos/AtawurRahmanTanvir/Creator-Engine-Pro/releases';
-                
+
                 const response = await fetch(repoUrl, {
                     headers: {
                         'Accept': 'application/vnd.github.v3+json'
@@ -316,13 +320,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (!response.ok) {
-                    if(response.status === 403) throw new Error('API Rate Limit Exceeded. Try again later.');
+                    if (response.status === 403) throw new Error('API Rate Limit Exceeded. Try again later.');
                     throw new Error('Failed to fetch from GitHub');
                 }
-                
+
                 const releases = await response.json();
 
-                versionListContent.innerHTML = ''; 
+                versionListContent.innerHTML = '';
 
                 if (releases.length === 0) {
                     versionListContent.innerHTML = '<div style="text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 10px;">No previous versions found.</div>';
@@ -333,10 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 releases.forEach((release, index) => {
                     const isLatest = index === 0; // প্রথম আইটেমটাই সবসময় Latest
                     const date = new Date(release.published_at).toLocaleDateString();
-                    
+
                     const versionBox = document.createElement('div');
                     versionBox.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);';
-                    
+
                     versionBox.innerHTML = `
                         <div>
                             <div style="display: flex; align-items: center; gap: 8px;">
@@ -367,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     // ==========================================
     // ৪. ANIMATIONS (CountUp & Hover Effects)
     // ==========================================
@@ -603,26 +607,26 @@ document.addEventListener('DOMContentLoaded', () => {
         ipcRenderer.on('ui-console-log', (event, data) => {
             if (data.target === 'gemini' && window.geminiLogLine) {
                 window.geminiLogLine(data.type, data.text);
-                if(data.type === 'completed' || data.type === 'generating') window.addRecentActivity('Gemini', data.text, 'ai-gemini');
+                if (data.type === 'completed' || data.type === 'generating') window.addRecentActivity('Gemini', data.text, 'ai-gemini');
             } else if (data.target === 'flow' && window.flowLogLine) {
                 window.flowLogLine(data.type, data.text);
-                if(data.type === 'completed' || data.type === 'generating') window.addRecentActivity('Flow Video', data.text, 'accent-primary');
+                if (data.type === 'completed' || data.type === 'generating') window.addRecentActivity('Flow Video', data.text, 'accent-primary');
             } else if (window.logLine) {
                 window.logLine(data.type, data.text);
-                
+
                 let sysColor = 'accent-primary';
                 let sysName = 'System';
                 const lowerText = data.text.toLowerCase();
-                
-                if(lowerText.includes('chatgpt')) { sysColor = 'ai-chatgpt'; sysName = 'ChatGPT'; }
-                else if(lowerText.includes('gemini')) { sysColor = 'ai-gemini'; sysName = 'Gemini'; }
-                else if(lowerText.includes('claude')) { sysColor = 'ai-claude'; sysName = 'Claude'; }
-                else if(lowerText.includes('deepseek')) { sysColor = 'ai-deepseek'; sysName = 'DeepSeek'; }
-                else if(lowerText.includes('qwen')) { sysColor = 'ai-qwen'; sysName = 'Qwen'; }
-                else if(lowerText.includes('perplexity')) { sysColor = 'ai-perplexity'; sysName = 'Perplexity'; }
-                else if(lowerText.includes('grok')) { sysColor = 'ai-grok'; sysName = 'Grok'; }
-                else if(lowerText.includes('orchestrator') || lowerText.includes('administrator')) { sysName = 'Orchestrator'; }
-                
+
+                if (lowerText.includes('chatgpt')) { sysColor = 'ai-chatgpt'; sysName = 'ChatGPT'; }
+                else if (lowerText.includes('gemini')) { sysColor = 'ai-gemini'; sysName = 'Gemini'; }
+                else if (lowerText.includes('claude')) { sysColor = 'ai-claude'; sysName = 'Claude'; }
+                else if (lowerText.includes('deepseek')) { sysColor = 'ai-deepseek'; sysName = 'DeepSeek'; }
+                else if (lowerText.includes('qwen')) { sysColor = 'ai-qwen'; sysName = 'Qwen'; }
+                else if (lowerText.includes('perplexity')) { sysColor = 'ai-perplexity'; sysName = 'Perplexity'; }
+                else if (lowerText.includes('grok')) { sysColor = 'ai-grok'; sysName = 'Grok'; }
+                else if (lowerText.includes('orchestrator') || lowerText.includes('administrator')) { sysName = 'Orchestrator'; }
+
                 if (data.type === 'sent' || data.type === 'completed' || data.type === 'ready') {
                     window.addRecentActivity(sysName, data.text, sysColor);
                 }
@@ -968,7 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (composerInput) {
         composerInput.addEventListener('input', function () {
-            this.style.height = '80px'; 
+            this.style.height = '80px';
             let newHeight = this.scrollHeight;
             if (newHeight >= 180) {
                 this.style.height = '180px';
@@ -979,7 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     targetChips.forEach((chip) => {
         chip.addEventListener('click', () => {
             if (chip.disabled) return;
@@ -1129,12 +1133,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
-                composerInput.value = ''; 
-                composerInput.style.height = '80px'; 
-                composerInput.style.overflowY = 'hidden'; 
-                
-                composerSend.classList.remove('is-sent'); 
-                void composerSend.offsetWidth; 
+                composerInput.value = '';
+                composerInput.style.height = '80px';
+                composerInput.style.overflowY = 'hidden';
+
+                composerSend.classList.remove('is-sent');
+                void composerSend.offsetWidth;
                 composerSend.classList.add('is-sent');
             }
         };
@@ -1163,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 300);
 
     // ==========================================
-    // ৮. GEMINI & FLOW CONTROLLERS
+    // ৮. GEMINI & FLOW CONTROLLERS (SMART RESUME & MEMORY)
     // ==========================================
     ['gemini', 'flow'].forEach(prefix => {
         const editor = document.getElementById(`${prefix}-promptEditor`);
@@ -1179,13 +1183,35 @@ document.addEventListener('DOMContentLoaded', () => {
             const remainingEl = document.getElementById(`${prefix}-readoutRemaining`);
             const percentEl = document.getElementById(`${prefix}-progressPercent`);
             const fillEl = document.getElementById(`${prefix}-progressFill`);
-            
+
             if (completedEl) completedEl.textContent = completed;
             if (remainingEl) remainingEl.textContent = Math.max(0, total - completed);
-            
+
             const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
             if (percentEl) percentEl.textContent = `${percent}%`;
             if (fillEl) fillEl.style.width = `${percent}%`;
+        }
+
+        // 🔴 MAGIC FIX: Load Saved Progress on Startup
+        const savedStateStr = localStorage.getItem(`${prefix}_progress_state`);
+        let sessionState = 'idle';
+
+        if (savedStateStr) {
+            try {
+                const savedState = JSON.parse(savedStateStr);
+                if (savedState && savedState.text) {
+                    editor.value = savedState.text;
+                    activeCompleted = savedState.completed || 0;
+                    activeTotal = editor.value.split('\n').filter(l => l.trim().length > 0).length;
+                    updateProgressUI(activeCompleted, activeTotal);
+
+                    if (activeCompleted > 0 && activeCompleted < activeTotal) {
+                        sessionState = 'paused';
+                        const stateText = document.getElementById(`${prefix}-currentStateText`);
+                        if (stateText) stateText.textContent = `Crash Recovered: Ready to resume from line ${activeCompleted + 1}`;
+                    }
+                }
+            } catch (e) { }
         }
 
         function updateGutter() {
@@ -1194,6 +1220,9 @@ document.addEventListener('DOMContentLoaded', () => {
             gutter.textContent = out;
             const n = lines.map(l => l.trim()).filter(l => l.length > 0).length;
             if (queueCount) queueCount.textContent = n + (n === 1 ? ' prompt' : ' prompts');
+
+            // Auto-save whenever text changes
+            localStorage.setItem(`${prefix}_progress_state`, JSON.stringify({ text: editor.value, completed: activeCompleted }));
         }
         editor.addEventListener('input', updateGutter);
         editor.addEventListener('scroll', () => { gutter.scrollTop = editor.scrollTop; });
@@ -1201,14 +1230,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById(`${prefix}-clearQueueBtn`)?.addEventListener('click', () => {
             editor.value = ''; updateGutter();
+            localStorage.removeItem(`${prefix}_progress_state`);
             if (window[`${prefix}LogLine`]) window[`${prefix}LogLine`]('info', 'Queue cleared');
         });
 
         const startBtn = document.getElementById(`${prefix}-startBtn`);
         const resumeBtn = document.getElementById(`${prefix}-resumeBtn`);
         const resetBtn = document.getElementById(`${prefix}-resetBtn`);
+        const pauseBtn = document.getElementById(`${prefix}-pauseBtn`);
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => {
+                sessionState = 'paused';
+                updateBtns();
 
-        let sessionState = 'idle';
+                const dot = document.getElementById(`${prefix}-browserDot`);
+                if (dot) dot.className = 'chip-dot connected';
+                const status = document.getElementById(`${prefix}-browserStatusText`);
+                if (status) status.textContent = 'Connected (Paused)';
+                const stateText = document.getElementById(`${prefix}-currentStateText`);
+                if (stateText) stateText.textContent = 'Automation Paused';
+
+                if (ipcRenderer) ipcRenderer.send(`pause-${prefix === 'gemini' ? 'gemini-image' : 'flow'}-engine`);
+            });
+        }
+
         function updateBtns() {
             if (startBtn) startBtn.disabled = sessionState === 'running' || sessionState === 'paused';
             const pauseBtn = document.getElementById(`${prefix}-pauseBtn`);
@@ -1216,37 +1261,55 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resumeBtn) resumeBtn.disabled = sessionState !== 'paused';
         }
 
+        // Ensure UI buttons update on startup if memory loaded
+        if (activeCompleted > 0 && activeCompleted < activeTotal) updateBtns();
+
         if (startBtn) startBtn.addEventListener('click', () => {
             const lines = editor.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             if (!lines.length) return;
-            sessionState = 'running'; updateBtns();
 
+            // 🔴 Smart Prompt: Restart or Resume?
+            if (activeCompleted > 0 && activeCompleted < lines.length) {
+                const confirmRestart = window.confirm(`Progress detected: ${activeCompleted}/${lines.length} completed.\n\nClick OK to RESTART from Line 1.\nClick Cancel to RESUME from where you left off.`);
+                if (!confirmRestart) {
+                    if (resumeBtn) resumeBtn.click();
+                    return;
+                }
+            }
+
+            sessionState = 'running'; updateBtns();
             activeTotal = lines.length;
             activeCompleted = 0;
             updateProgressUI(activeCompleted, activeTotal);
+            localStorage.setItem(`${prefix}_progress_state`, JSON.stringify({ text: editor.value, completed: 0 }));
 
             const dot = document.getElementById(`${prefix}-browserDot`); if (dot) dot.className = 'chip-dot connecting';
             const status = document.getElementById(`${prefix}-browserStatusText`); if (status) status.textContent = 'Connecting';
             const stateText = document.getElementById(`${prefix}-currentStateText`); if (stateText) stateText.textContent = 'Launching Engine...';
 
             const acc = localStorage.getItem('activeRootAccount') || (prefix === 'gemini' ? 'Gemini_Profile' : 'Flow_Profile');
-            
             const browserSpan = document.getElementById(`${prefix}-selected-browser`);
             const bName = browserSpan ? browserSpan.dataset.value : 'chrome';
 
             if (ipcRenderer) {
-                ipcRenderer.send(`start-${prefix === 'gemini' ? 'gemini-image' : 'flow'}-engine`, { 
-                    prompts: lines, 
-                    accountName: acc, 
-                    browserName: bName 
+                ipcRenderer.send(`start-${prefix === 'gemini' ? 'gemini-image' : 'flow'}-engine`, {
+                    prompts: lines, accountName: acc, browserName: bName, startIndex: 0
                 });
             }
         });
 
         if (resumeBtn) resumeBtn.addEventListener('click', () => {
             sessionState = 'running'; updateBtns();
-            const stateText = document.getElementById(`${prefix}-currentStateText`); if (stateText) stateText.textContent = 'Running Automation...';
-            if (ipcRenderer) ipcRenderer.send(`resume-${prefix === 'gemini' ? 'gemini-image' : 'flow'}-engine`);
+            const stateText = document.getElementById(`${prefix}-currentStateText`); if (stateText) stateText.textContent = 'Resuming Automation...';
+
+            const lines = editor.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const acc = localStorage.getItem('activeRootAccount') || (prefix === 'gemini' ? 'Gemini_Profile' : 'Flow_Profile');
+            const browserSpan = document.getElementById(`${prefix}-selected-browser`);
+            const bName = browserSpan ? browserSpan.dataset.value : 'chrome';
+
+            if (ipcRenderer) ipcRenderer.send(`resume-${prefix === 'gemini' ? 'gemini-image' : 'flow'}-engine`, {
+                prompts: lines, accountName: acc, browserName: bName, startIndex: activeCompleted
+            });
         });
 
         if (resetBtn) resetBtn.addEventListener('click', () => {
@@ -1258,9 +1321,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const stateText = document.getElementById(`${prefix}-currentStateText`); if (stateText) stateText.textContent = 'Idle';
             const currentP = document.getElementById(`${prefix}-currentPromptText`); if (currentP) currentP.textContent = '—';
 
-            activeCompleted = 0;
-            activeTotal = 0;
+            activeCompleted = 0; activeTotal = 0;
             updateProgressUI(0, 0);
+            localStorage.setItem(`${prefix}_progress_state`, JSON.stringify({ text: editor.value, completed: 0 }));
 
             if (window[`${prefix}LogLine`]) window[`${prefix}LogLine`]('info', 'Session reset.');
         });
@@ -1277,25 +1340,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     const dot = document.getElementById(`${prefix}-browserDot`); if (dot) dot.className = 'chip-dot connected';
                     const status = document.getElementById(`${prefix}-browserStatusText`); if (status) status.textContent = 'Connected';
                     const stateText = document.getElementById(`${prefix}-currentStateText`); if (stateText) stateText.textContent = `Generating ${prefix === 'gemini' ? 'Images' : 'Videos'}...`;
-                
+
                 } else if (msg.state === 'prompt') {
                     const currentP = document.getElementById(`${prefix}-currentPromptText`); if (currentP) currentP.textContent = msg.text;
-                    
                     updateProgressUI(activeCompleted, activeTotal);
-                    activeCompleted++; 
+                    activeCompleted++;
 
                 } else if (msg.state === 'progress') {
                     if (msg.completed !== undefined) activeCompleted = msg.completed;
                     if (msg.total !== undefined) activeTotal = msg.total;
                     updateProgressUI(activeCompleted, activeTotal);
+                    // 🔴 Update save state on progress
+                    localStorage.setItem(`${prefix}_progress_state`, JSON.stringify({ text: editor.value, completed: activeCompleted }));
 
                 } else if (msg.state === 'done') {
                     sessionState = 'complete'; updateBtns();
                     const stateText = document.getElementById(`${prefix}-currentStateText`); if (stateText) stateText.textContent = 'All Prompts Completed';
-                    
-                    activeCompleted = activeTotal > 0 ? activeTotal : 1; 
+
+                    activeCompleted = activeTotal > 0 ? activeTotal : 1;
                     activeTotal = activeCompleted;
                     updateProgressUI(activeCompleted, activeTotal);
+                    localStorage.removeItem(`${prefix}_progress_state`); // Clear memory when completely done
 
                     if (prefix === 'gemini') {
                         window.LiveStats.images += msg.total || activeTotal || 1;
@@ -1308,7 +1373,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
-    
+
     // ==========================================
     // ৯. SYSTEM BOOT SEQUENCE (Visual Consoles)
     // ==========================================
@@ -1334,7 +1399,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeWorkers = enabledWorkerIds().length;
         const stageEl = document.querySelector('.page-workspace .stat-card:nth-child(1) .stat-value [data-count-to]');
         if (stageEl) {
-            stageEl.dataset.countTo = activeWorkers > 0 ? 2 : 1; 
+            stageEl.dataset.countTo = activeWorkers > 0 ? 2 : 1;
             stageEl.textContent = activeWorkers > 0 ? '2' : '1';
         }
 
@@ -1358,4 +1423,192 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 3000);
 
-});
+// ==========================================
+    // ১১. DYNAMIC NOTIFICATION SYSTEM (100% UI Safe + Dynamic Time)
+    // ==========================================
+    
+    // 🔴 সময়ের পার্থক্য বের করার স্মার্ট ফাংশন
+    function timeAgo(dateString) {
+        if (!dateString) return "Just now";
+        const now = new Date();
+        const past = new Date(dateString);
+        const diffMs = now - past;
+        const diffSec = Math.floor(diffMs / 1000);
+        const diffMin = Math.floor(diffSec / 60);
+        const diffHour = Math.floor(diffMin / 60);
+        const diffDay = Math.floor(diffHour / 24);
+        const diffMonth = Math.floor(diffDay / 30);
+        const diffYear = Math.floor(diffDay / 365);
+
+        if (diffSec < 60) return "Just now";
+        if (diffMin < 60) return `${diffMin} min ago`;
+        if (diffHour < 24) return `${diffHour} hr ago`;
+        if (diffDay === 1) return "Yesterday";
+        if (diffDay < 30) return `${diffDay} days ago`;
+        if (diffMonth < 12) return `${diffMonth} mo ago`;
+        return `${diffYear} yr ago`;
+    }
+
+    async function loadDynamicNotifications() {
+        const listContainer = document.getElementById('dynamicNotificationList');
+        const badge = document.getElementById('mainNotifBadge');
+
+        if (!listContainer) return;
+
+        try {
+            const response = await fetch('../Master_Controller/notifications.json');
+
+            if (!response.ok) {
+                listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-tertiary);">No new notifications found.</div>';
+                return;
+            }
+
+            const notifications = await response.json();
+            listContainer.innerHTML = ''; 
+            let unreadCount = 0;
+
+            if (notifications.length === 0) {
+                listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-tertiary);">No new notifications found.</div>';
+                return;
+            }
+
+            notifications.forEach(notif => {
+                if (!notif.isRead) unreadCount++;
+
+                let iconHtml = '';
+                if (notif.iconType === 'system') {
+                    iconHtml = `<div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; display: flex; align-items: center; justify-content: center;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+                                </div>`;
+                } else {
+                    iconHtml = `<div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-primary); color: var(--bg-void); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px;">
+                                    AR
+                                </div>`;
+                }
+
+                // 🔴 এখানে timeAgo ফাংশন দিয়ে বর্তমান সময়ের সাথে হিসাব করে স্ট্রিং বানানো হচ্ছে
+                const displayTime = notif.timestamp ? timeAgo(notif.timestamp) : (notif.time || "Just now");
+
+                const notifEl = document.createElement('div');
+                notifEl.className = `notif-item ${notif.isRead ? 'read' : 'unread'}`;
+                notifEl.style.background = notif.isRead ? 'transparent' : (notif.iconType === 'system' ? 'rgba(0, 198, 255, 0.06)' : 'rgba(201, 154, 91, 0.08)');
+
+                notifEl.innerHTML = `
+                    <div style="position: relative;">
+                      ${iconHtml}
+                      <div class="notif-unread-dot" style="opacity: ${notif.isRead ? '0' : '1'}; transform: scale(${notif.isRead ? '0' : '1'});"></div>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                        <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: ${notif.iconType === 'system' ? '#00c6ff' : 'var(--text-primary)'};">${notif.sender}</h4>
+                        <span style="font-size: 11px; color: ${notif.iconType === 'system' ? '#00c6ff' : 'var(--accent-primary)'}; font-weight: 500;">${displayTime}</span>
+                      </div>
+                      <h5 style="margin: 0; font-size: 12.5px; font-weight: 600; color: var(--text-primary);">${notif.title}</h5>
+                      <div class="notif-preview" style="display: block;">${notif.preview}</div>
+                      <div class="notif-full-body" style="max-height: 0px; opacity: 0; overflow: hidden; transition: all 0.4s ease;">
+                        ${notif.body}
+                      </div>
+                    </div>
+                `;
+
+                notifEl.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const isExpanded = this.classList.contains('expanded');
+                    const preview = this.querySelector('.notif-preview');
+                    const fullBody = this.querySelector('.notif-full-body');
+
+                    if (isExpanded) {
+                        this.classList.remove('expanded');
+                        preview.style.display = 'block';
+                        fullBody.style.maxHeight = '0px';
+                        fullBody.style.opacity = '0';
+                        fullBody.style.marginTop = '0px';
+                        fullBody.style.paddingTop = '0px';
+                        fullBody.style.borderTop = 'none';
+                    } else {
+                        this.classList.add('expanded');
+                        preview.style.display = 'none';
+                        fullBody.style.maxHeight = '500px';
+                        fullBody.style.opacity = '1';
+                        fullBody.style.marginTop = '10px';
+                        fullBody.style.paddingTop = '10px';
+                        fullBody.style.borderTop = '1px solid rgba(255, 255, 255, 0.05)';
+                    }
+
+                    if (this.classList.contains('unread')) {
+                        this.classList.replace('unread', 'read');
+                        this.style.background = 'transparent';
+                        const dot = this.querySelector('.notif-unread-dot');
+                        if (dot) { dot.style.opacity = '0'; dot.style.transform = 'scale(0)'; }
+
+                        unreadCount = Math.max(0, unreadCount - 1);
+                        if (badge) badge.style.display = unreadCount > 0 ? 'block' : 'none';
+                    }
+                });
+
+                listContainer.appendChild(notifEl);
+            });
+
+            if (badge) badge.style.display = unreadCount > 0 ? 'block' : 'none';
+
+        } catch (err) {
+            console.error("Error loading notifications:", err);
+            listContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--color-error); font-size: 12px;">Failed to load notifications.</div>';
+        }
+    }
+
+    setTimeout(loadDynamicNotifications, 500);
+
+// ==========================================
+    // ১২. DYNAMIC HELP / DOCUMENTATION SYSTEM
+    // ==========================================
+    async function loadDynamicHelpDocs() {
+        const container = document.getElementById('dynamicHelpContent');
+        if (!container) return;
+
+        try {
+            const response = await fetch('../Master_Controller/help_docs.json');
+            if (!response.ok) throw new Error("Failed to load help docs");
+
+            const data = await response.json();
+
+            let html = `
+                <!-- Developer Info & Social Links -->
+                <div style="background: rgba(201,154,91,0.05); border: 1px solid rgba(201,154,91,0.2); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <h4 style="color: var(--accent-primary); margin: 0 0 5px 0; font-size: 15px;">${data.appInfo.name} ${data.appInfo.version}</h4>
+                    <p style="margin: 0 0 4px 0; color: #fff;"><strong>Developer:</strong> ${data.appInfo.developer}</p>
+                    <p style="margin: 0; font-size: 12px;">${data.appInfo.description}</p>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+            `;
+
+            data.socialLinks.forEach(link => {
+                html += `
+                    <a href="${link.url}" onclick="event.preventDefault(); require('electron').shell.openExternal(this.href);" style="background: ${link.color}; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 11px; display: flex; align-items: center; gap: 6px; transition: 0.2s; cursor: pointer;">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="${link.iconPath}" /></svg>
+                      ${link.name}
+                    </a>
+                `;
+            });
+
+            html += `</div></div>`;
+
+            data.documentation.forEach(sec => {
+                html += `
+                    <h4 style="color: ${sec.titleColor}; margin-bottom: 8px; font-size: 14px;">${sec.title}</h4>
+                    ${sec.body}
+                `;
+            });
+
+            container.innerHTML = html;
+
+        } catch (err) {
+            console.error("Error loading help docs:", err);
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--color-error); font-size: 12px;">Failed to load documentation.<br>Please make sure <b>help_docs.json</b> is saved inside Master_Controller folder.</div>';
+        }
+    }
+
+    setTimeout(loadDynamicHelpDocs, 600);
+
+}); // <--- এটি আপনার মেইন DOMContentLoaded এর একদম শেষের ক্লোজিং ব্র্যাকেট!

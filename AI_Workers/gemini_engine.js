@@ -1,311 +1,393 @@
 // ==========================================
-// FILE: AI_Workers/gemini_image_engine.js
+// FILE: AI_Workers/gemini_engine.js
 // ==========================================
 
-const { chromium, firefox } = require('playwright');
+const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
-const MASTER_DIR = path.join(__dirname, '..', 'Master_Controller');
-const INPUT_SELECTOR = (() => { try { return JSON.parse(fs.readFileSync(path.join(MASTER_DIR, 'ai_selectors.json'))).gemini.chatBox; } catch(e) { return 'rich-textarea, textarea, div[role="textbox"][contenteditable="true"], .ql-editor'; } })();
 
-// UI থেকে পাঠানো অ্যাকাউন্টের নাম ও ব্রাউজার রিসিভ করা
 const profileName = process.argv[2] || 'Normal_Browser';
-const browserChoice = process.argv[3] || 'chrome';
-const ACCOUNTS_DIR = path.join(__dirname, '..', 'Accounts', profileName);
 
-if (!fs.existsSync(ACCOUNTS_DIR)) fs.mkdirSync(ACCOUNTS_DIR, { recursive: true });
+const MASTER_DIR = path.join(__dirname, '..', 'Master_Controller');
+// 🔴 ফিক্সড: ইনবক্সের নাম
+const INBOX_FILE = path.join(MASTER_DIR, 'Inbox', 'gemini_inbox.json');
+const OUTBOX_DIR = path.join(MASTER_DIR, 'Outbox');
 
-let browser, context, page;
-let isRunning = false;
-let waitForUserPromise = null;
+// 🔴 অ্যাকাউন্টের ফোল্ডার পাথ
+const ACCOUNTS_DIR = path.join(__dirname, '..', 'Accounts', profileName); 
 
-function sendLog(type, text) {
-    if (process.send) process.send({ type: 'console', logType: type, text: text });
-    else console.log(`[${type.toUpperCase()}] ${text}`);
-}
+if (!fs.existsSync(OUTBOX_DIR)) fs.mkdirSync(OUTBOX_DIR, { recursive: true });
+if (!fs.existsSync(path.dirname(INBOX_FILE))) fs.mkdirSync(path.dirname(INBOX_FILE), { recursive: true });
+if (!fs.existsSync(ACCOUNTS_DIR)) fs.mkdirSync(ACCOUNTS_DIR, { recursive: true }); 
 
-function sendStatus(state, data = {}) {
-    if (process.send) process.send({ type: 'status', state, ...data });
-}
-
-const randomDelay = (min, max) => new Promise(resolve => setTimeout(resolve, Math.random() * (max - min) + min));
-
-// 🔴 গ্লোবাল অটো-পাথ ফাইন্ডার (সব লোকেশন আপডেট করা হলো)
-function getBrowserExecutablePath(browserName) {
-    const platform = process.platform; 
-    const userProfile = process.env.USERPROFILE || ''; 
-    const localAppData = process.env.LOCALAPPDATA || '';
-    const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
-    const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
-
-    const paths = {
-        brave: {
-            win32: [
-                `${programFiles}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
-                `${programFilesX86}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`,
-                `${localAppData}\\BraveSoftware\\Brave-Browser\\Application\\brave.exe`
-            ],
-            darwin: ['/Applications/Brave Browser.app/Contents/MacOS/Brave Browser']
-        },
-        opera: {
-            win32: [
-                `${localAppData}\\Programs\\Opera\\launcher.exe`,
-                `${localAppData}\\Programs\\Opera\\opera.exe`,
-                `${localAppData}\\Programs\\Opera GX\\launcher.exe`,
-                `${localAppData}\\Programs\\Opera GX\\opera.exe`,
-                `${programFiles}\\Opera\\launcher.exe`,
-                `${programFiles}\\Opera\\opera.exe`,
-                `${programFilesX86}\\Opera\\launcher.exe`,
-                `${programFilesX86}\\Opera\\opera.exe`
-            ],
-            darwin: ['/Applications/Opera.app/Contents/MacOS/Opera']
-        },
-        vivaldi: {
-            win32: [
-                `${localAppData}\\Vivaldi\\Application\\vivaldi.exe`, 
-                `${programFiles}\\Vivaldi\\Application\\vivaldi.exe`
-            ],
-            darwin: ['/Applications/Vivaldi.app/Contents/MacOS/Vivaldi']
-        },
-        tor: { 
-            win32: [
-                `${userProfile}\\Desktop\\Tor Browser\\Browser\\firefox.exe`,
-                `C:\\Tor Browser\\Browser\\firefox.exe`
-            ],
-            darwin: ['/Applications/Tor Browser.app/Contents/MacOS/firefox']
-        },
-        firefox: { // 🔴 Firefox এর আসল লোকেশন অ্যাড করা হলো
-            win32: [
-                `${programFiles}\\Mozilla Firefox\\firefox.exe`,
-                `${programFilesX86}\\Mozilla Firefox\\firefox.exe`,
-                `${localAppData}\\Mozilla Firefox\\firefox.exe`
-            ],
-            darwin: ['/Applications/Firefox.app/Contents/MacOS/firefox']
-        }
-    };
-
-    if (paths[browserName] && paths[browserName][platform]) {
-        for (let p of paths[browserName][platform]) {
-            if (fs.existsSync(p)) return p;
-        }
-    }
-    return undefined; 
-}
-
-const DOWNLOAD_URLS = {
-    brave: 'https://brave.com/download/',
-    opera: 'https://www.opera.com/download',
-    vivaldi: 'https://vivaldi.com/download/',
-    tor: 'https://www.torproject.org/download/',
-    firefox: 'https://www.mozilla.org/firefox/new/' // 🔴 Firefox অ্যাড করা হলো
+const State = {
+    INITIATING: 'Initiating System',
+    CONVERSATION_READY: 'Conversation Ready',
+    LISTENING: 'Listening for Tasks',
+    TYPING: 'Typing',
+    PROMPT_SENT: 'Prompt Sent',
+    GENERATING: 'Generating',
+    COMPLETED: 'Completed',
+    OUTPUT_COPIED: 'Output Copied',
+    OUTPUT_SAVED: 'Output Saved'
 };
 
-async function startAutomation(prompts) {
-    if (isRunning) return;
-    isRunning = true;
+let currentState = State.INITIATING;
+let browser, context, page;
+let currentTask = null; 
+let currentOutput = "";
 
-    try {
-        sendLog('info', `🚀 Launching Gemini Image Engine on Profile: [${profileName}] via [${browserChoice.toUpperCase()}]`);
-        sendLog('info', `📊 Total Prompts Received: ${prompts.length}`);
+const INPUT_SELECTOR = (() => { try { return JSON.parse(fs.readFileSync(path.join(MASTER_DIR, 'ai_selectors.json'))).gemini.chatBox; } catch(e) { return 'rich-textarea, textarea, div[role="textbox"][contenteditable="true"], .ql-editor'; } })();
+const randomDelay = (min, max) => new Promise(resolve => setTimeout(resolve, Math.random() * (max - min) + min));
 
-        const bName = browserChoice.toLowerCase();
+(async () => {
+    console.log(`\n======================================================`);
+    console.log(` ♊ Gemini Worker Node [Profile: ${profileName}]`);
+    console.log(`======================================================\n`);
 
-        // 🔴 MAGIC FIX: ব্রাউজার না থাকলে সরাসরি ডাউনলোড পেজে নিয়ে যাওয়া
-        if (['brave', 'opera', 'vivaldi', 'tor', 'firefox'].includes(bName)) {
-            const customPath = getBrowserExecutablePath(bName);
-            if (!customPath) {
-                sendLog('error', `⚠️ ${bName.toUpperCase()} is not installed on your PC!`);
-                sendLog('info', `Redirecting to the official download page...`);
-                
-                // 🔴 FIX: আসল ক্রোম বা এজ দিয়ে ডাউনলোড পেজ ওপেন করা (যাতে ডাউনলোড ক্লিক করলে কাজ করে)
+    while (true) { 
+        switch (currentState) {
+            
+            case State.INITIATING:
                 try {
-                    const tempBrowser = await chromium.launch({ 
-                        channel: 'chrome', // আসল ক্রোম ওপেন করবে
-                        headless: false,
-                        args: ['--start-maximized']
+                    const PORTS_FILE = path.join(MASTER_DIR, 'active_ports.json');
+                    let targetPort = 9222;
+                    
+                    try {
+                        if (fs.existsSync(PORTS_FILE)) {
+                            let portsData = JSON.parse(fs.readFileSync(PORTS_FILE, 'utf8'));
+                            if (portsData[profileName]) {
+                                targetPort = portsData[profileName]; 
+                            } else {
+                                const usedPorts = Object.values(portsData);
+                                targetPort = usedPorts.length > 0 ? Math.max(...usedPorts) + 1 : 9222;
+                                portsData[profileName] = targetPort;
+                                fs.writeFileSync(PORTS_FILE, JSON.stringify(portsData, null, 4));
+                            }
+                        } else {
+                            fs.writeFileSync(PORTS_FILE, JSON.stringify({ [profileName]: 9222 }, null, 4));
+                        }
+                    } catch(e) {}
+
+                    const endpoint = `http://127.0.0.1:${targetPort}`;
+                    
+                    try {
+                        console.log(`[STATE] 🌐 Checking for Browser on Port ${targetPort} (Profile: ${profileName})...`);
+                        browser = await chromium.connectOverCDP(endpoint);
+                        context = browser.contexts()[0];
+                        page = await context.newPage();
+                        console.log(`[INFO] ✅ Connected! Opening Gemini Worker in a new tab...`);
+                    } catch (cdpError) {
+                        console.log(`[INFO] Browser not found. Launching new window for ${profileName}...`);
+                        const ACCOUNTS_DIR = path.join(__dirname, '..', 'Accounts', profileName); 
+                        if (!fs.existsSync(ACCOUNTS_DIR)) fs.mkdirSync(ACCOUNTS_DIR, { recursive: true });
+                        
+                        context = await chromium.launchPersistentContext(ACCOUNTS_DIR, {
+                            headless: false,
+                            channel: 'chrome',
+                            viewport: null,
+                            ignoreDefaultArgs: ["--enable-automation"], 
+                            args: [
+                                `--remote-debugging-port=${targetPort}`, 
+                                '--start-maximized',
+                                '--disable-blink-features=AutomationControlled',
+                                '--no-sandbox',
+                                '--disable-infobars'
+                            ]
+                        });
+                        let pages = context.pages();
+                        page = pages.length > 0 ? pages[0] : await context.newPage();
+                        console.log(`[INFO] ✅ New Browser Launched successfully on port ${targetPort}!`);
+                    }
+
+                    page.setDefaultTimeout(0); 
+                    
+                    console.log(`[INFO] Opening Gemini Workspace Tab...`);
+                    await page.goto('https://gemini.google.com/app', { waitUntil: 'domcontentloaded' });
+                    
+                    await page.bringToFront(); 
+                    console.log(`[INFO] ✅ Gemini Worker hooked successfully!`);
+                    
+                    await page.waitForTimeout(5000); 
+                    currentState = State.CONVERSATION_READY;
+                } catch (err) {
+                    console.log(`[ERROR DETAILS] ${err.message}`); 
+                    console.log(`[WARNING] Browser launch failed. Retrying in 5 seconds...`);
+                    await new Promise(r => setTimeout(r, 5000));
+                }
+                break;
+
+            case State.CONVERSATION_READY: 
+                try {
+                    await page.evaluate(() => {
+                        document.querySelectorAll('div[role="dialog"]').forEach(e => {
+                            const btn = e.querySelector('button, [role="button"]');
+                            if(btn) btn.click();
+                            else e.remove();
+                        });
                     });
-                    const tempPage = await tempBrowser.newPage();
-                    await tempPage.goto(DOWNLOAD_URLS[bName]);
-                } catch (fallbackError) {
-                    // ক্রোম না থাকলে উইন্ডোজের ডিফল্ট Edge ওপেন করবে
-                    const tempBrowserEdge = await chromium.launch({ 
-                        channel: 'msedge', 
-                        headless: false,
-                        args: ['--start-maximized']
+                } catch(e) {}
+
+                console.log(`[STATE] ⏳ Waiting for Input Box to be completely visible...`);
+                await page.locator(INPUT_SELECTOR).last().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
+                
+                await page.waitForTimeout(3000); 
+                
+                currentState = State.LISTENING; 
+                break;
+
+            case State.LISTENING:
+                try {
+                    if (fs.existsSync(INBOX_FILE)) {
+                        const rawData = fs.readFileSync(INBOX_FILE, 'utf8');
+                        if (rawData.trim() !== "" && rawData.trim() !== "{}") {
+                            const data = JSON.parse(rawData);
+                            
+                            if (data.prompt && data.task_id) {
+                                console.log(`\n[STATE] 📥 NEW TASK RECEIVED from ${data.sender}!`);
+                                currentTask = data;
+                                currentState = State.TYPING;
+                                break; 
+                            }
+                        }
+                    }
+                } catch (e) {}
+                
+                await page.waitForTimeout(1000);
+                break;
+
+            case State.TYPING: 
+                console.log(`[STATE] ⌨️  ${currentState}: Blazing fast Copy-Paste typing...`);
+                
+                const promptBox = page.locator(INPUT_SELECTOR).last();
+                
+                await promptBox.waitFor({ state: 'visible' }); 
+                await promptBox.click({ force: true });
+                await page.waitForTimeout(500); 
+                
+                await page.keyboard.press('Control+A');
+                await page.keyboard.press('Backspace');
+                await randomDelay(100, 200);
+                
+                await page.evaluate((text) => {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                }, currentTask.prompt);
+
+                await promptBox.click({ force: true });
+                await page.waitForTimeout(200); 
+                await page.keyboard.press('Control+V'); 
+                
+                await randomDelay(800, 1200); 
+                currentState = State.PROMPT_SENT;
+                break;
+
+            case State.PROMPT_SENT: 
+                console.log(`[STATE] 🚀 ${currentState}: Pressing 'Enter' to submit.`);
+                await page.keyboard.press('Enter');
+                currentState = State.GENERATING;
+                break;
+
+            case State.GENERATING: 
+                try {
+                    await page.waitForTimeout(2000); 
+                    let previousText = "";
+                    let sameTextCounter = 0;
+                    
+                    for (let i = 0; i < 120; i++) {
+                        const currentText = await page.evaluate(() => {
+                            const blocks = Array.from(document.querySelectorAll('model-response, message-content, .message-content, [data-test-id="model-response"]'));
+                            if (blocks.length === 0) return "";
+                            return blocks[blocks.length - 1].innerText;
+                        });
+                        
+                        if (currentText === previousText && currentText.trim().length > 10) {
+                            sameTextCounter++;
+                            if (sameTextCounter >= 3) break; 
+                        } else {
+                            sameTextCounter = 0; 
+                            previousText = currentText; 
+                        }
+                        await page.waitForTimeout(1000); 
+                    }
+                    currentState = State.COMPLETED;
+                } catch (e) {
+                    currentState = State.COMPLETED; 
+                }
+                break;
+
+            case State.COMPLETED:
+                console.log(`[STATE] ✅ ${currentState}: AI response finalized.`);
+                await randomDelay(300, 600); 
+                currentState = State.OUTPUT_COPIED;
+                break;
+
+            case State.OUTPUT_COPIED: 
+                console.log(`[STATE] 📋 Extracting text with Multi-Tier Fallback...`);
+                
+                try {
+                    let extractedText = null;
+
+                    // ==========================================
+                    // 🚀 PLAN A: Smart DOM Extractor
+                    // ==========================================
+                    extractedText = await page.evaluate(() => {
+                        try {
+                            let messages = Array.from(document.querySelectorAll('div[data-message-author-role="assistant"], .prose, .markdown-body, .markdown, model-response, message-content, [data-test-id="model-response"], div[dir="auto"]'));
+                            messages = messages.filter(m => !m.closest('[role="dialog"]') && m.innerText.trim().length > 0);
+                            
+                            if (messages.length > 0) {
+                                const lastMessage = messages[messages.length - 1];
+                                const clone = lastMessage.cloneNode(true);
+                                
+                                clone.querySelectorAll('button, svg, img, [role="button"], span.sr-only, .visually-hidden, a.citation, style, script, footer, details').forEach(el => el.remove());
+                                
+                                clone.querySelectorAll('table').forEach(table => {
+                                    const rows = Array.from(table.querySelectorAll('tr'));
+                                    let tableText = '\n\n';
+                                    rows.forEach((row, index) => {
+                                        const cells = Array.from(row.querySelectorAll('th, td'));
+                                        const rowText = cells.map(cell => cell.innerText.trim().replace(/\n/g, ' ')).join(' | ');
+                                        tableText += '| ' + rowText + ' |\n';
+                                        if(index === 0) tableText += '|' + cells.map(() => '---').join('|') + '|\n';
+                                    });
+                                    tableText += '\n';
+                                    table.parentNode.replaceChild(document.createTextNode(tableText), table);
+                                });
+
+                                clone.querySelectorAll('pre').forEach(pre => {
+                                    const code = pre.innerText.trim();
+                                    pre.parentNode.replaceChild(document.createTextNode('\n\n```\n' + code + '\n```\n\n'), pre);
+                                });
+
+                                clone.querySelectorAll('p, h1, h2, h3, h4, li').forEach(el => {
+                                    el.parentNode.replaceChild(document.createTextNode(el.innerText.trim() + '\n\n'), el);
+                                });
+
+                                return clone.innerText.trim().replace(/\n{3,}/g, '\n\n');
+                            }
+                            return null;
+                        } catch(e) { return null; }
                     });
-                    const tempPageEdge = await tempBrowserEdge.newPage();
-                    await tempPageEdge.goto(DOWNLOAD_URLS[bName]);
+
+                    // ==========================================
+                    // 🛡️ PLAN B: Native Copy Button & Clipboard
+                    // ==========================================
+                    if (!extractedText || extractedText.trim() === "") {
+                        console.log(`[WARNING] Plan A failed. Attempting Plan B: Native Copy Button...`);
+                        const isCopied = await page.evaluate(async () => {
+                            const btns = Array.from(document.querySelectorAll('button, div[role="button"]')).filter(b => 
+                                (b.getAttribute('aria-label') || '').toLowerCase().includes('copy') || 
+                                (b.title || '').toLowerCase().includes('copy') ||
+                                (b.className || '').toLowerCase().includes('copy')
+                            );
+                            const chatBtns = btns.filter(b => !b.closest('[role="dialog"]') && !b.closest('[class*="banner"]') && !b.closest('footer'));
+                            
+                            if (chatBtns.length > 0) {
+                                chatBtns[chatBtns.length - 1].click();
+                                return true;
+                            }
+                            return false;
+                        });
+
+                        if (isCopied) {
+                            await page.waitForTimeout(1000); 
+                            extractedText = await page.evaluate(async () => {
+                                try { return await navigator.clipboard.readText(); } catch (e) { return null; }
+                            });
+                        }
+                    }
+
+                    // ==========================================
+                    // 🪂 PLAN C: Ultimate Raw Fallback
+                    // ==========================================
+                    if (!extractedText || extractedText.trim() === "") {
+                        console.log(`[WARNING] Plan B failed. Attempting Plan C: Raw Extraction...`);
+                        extractedText = await page.evaluate(() => {
+                            const fallbacks = document.querySelectorAll('.prose, .markdown, .markdown-body, div[dir="auto"], div[data-message-author-role="assistant"]');
+                            if(fallbacks.length > 0) return fallbacks[fallbacks.length - 1].innerText.trim();
+                            return "[ERROR] System could not extract text."; 
+                        });
+                    }
+
+                    currentOutput = extractedText;
+
+                    // ==========================================
+                    // 🔴 Universal Cleanup
+                    // ==========================================
+                    if (currentOutput) {
+                        currentOutput = currentOutput.replace(/^Thinking completed.*?[\r\n]+/i, '');
+                        currentOutput = currentOutput.replace(/^Thinking.*?[\r\n]+/i, '');
+                        currentOutput = currentOutput.replace(/^Claude responded:?\s*/i, ''); 
+                        currentOutput = currentOutput.replace(/^Thought for .*?s\s*/i, ''); 
+                        currentOutput = currentOutput.replace(/AI-generated content may not be accurate.*/gi, '');
+                        currentOutput = currentOutput.trim();
+                    }
+
+                } catch (err) { 
+                    currentOutput = `[ERROR] All Extraction Plans Failed: ${err.message}`; 
+                }
+
+                if (!currentOutput || currentOutput.trim() === "") {
+                    currentOutput = "[ERROR] Extracted text was empty.";
                 }
                 
-                sendStatus('idle');
-                isRunning = false;
-                return; // ইঞ্জিন এখানেই বন্ধ হয়ে যাবে
-            }
-        }
+                currentState = State.OUTPUT_SAVED;
+                break;
 
-        const PORTS_FILE = path.join(MASTER_DIR, 'active_ports.json');
-        let targetPort = 9222;
-        
-        try {
-            if (fs.existsSync(PORTS_FILE)) {
-                let portsData = JSON.parse(fs.readFileSync(PORTS_FILE, 'utf8'));
-                if (portsData[profileName]) {
-                    targetPort = portsData[profileName]; 
-                } else {
-                    const usedPorts = Object.values(portsData);
-                    targetPort = usedPorts.length > 0 ? Math.max(...usedPorts) + 1 : 9222;
-                    portsData[profileName] = targetPort;
-                    fs.writeFileSync(PORTS_FILE, JSON.stringify(portsData, null, 4));
-                }
-            } else {
-                fs.writeFileSync(PORTS_FILE, JSON.stringify({ [profileName]: 9222 }, null, 4));
-            }
-        } catch(e) {}
-
-        const endpoint = `http://127.0.0.1:${targetPort}`;
-        
-        try {
-            sendLog('connect', `Checking for existing Browser on Port ${targetPort}...`);
-            if (bName !== 'firefox' && bName !== 'tor') {
-                browser = await chromium.connectOverCDP(endpoint);
-                context = browser.contexts()[0];
-                page = await context.newPage();
-                sendLog('connect', `✅ Connected to existing browser session!`);
-            } else {
-                throw new Error("Firefox/Tor needs fresh launch");
-            }
-        } catch (cdpError) {
-            sendLog('connect', `Launching new ${browserChoice.toUpperCase()} window...`);
-            
-            let launchConfig = {
-                headless: false,
-                viewport: null,
-                ignoreDefaultArgs: ["--enable-automation"],
-                args: [
-                    `--remote-debugging-port=${targetPort}`,
-                    '--start-maximized', 
-                    '--disable-blink-features=AutomationControlled',
-                    '--no-sandbox',
-                    '--disable-infobars'
-                ]
-            };
-
-            if (bName === 'firefox' || bName === 'tor') {
-                let ffConfig = { headless: false, viewport: null, args: ['--start-maximized'] };
+            case State.OUTPUT_SAVED: 
+                console.log(`[STATE] 💾 ${currentState}: Pushing to Outbox for Router to process...`);
                 
-                // 🔴 FIX: এখানে Firefox এর আসল পাথ ধরিয়ে দেয়া হলো
-                const customPath = getBrowserExecutablePath(bName);
-                if (customPath) {
-                    ffConfig.executablePath = customPath;
+                const outboxData = {
+                    task_id: currentTask.task_id,
+                    sender: "@gemini", 
+                    receiver: "@administrator", // 🔴 স্ট্রিক্টলি অ্যাডমিনের কাছে যাবে
+                    original_prompt: currentTask.prompt,
+                    response: currentOutput,
+                    timestamp: new Date().toISOString()
+                };
+
+                const outboxFilePath = path.join(OUTBOX_DIR, `outbox_gemini_${Date.now()}.json`);
+                fs.writeFileSync(outboxFilePath, JSON.stringify(outboxData, null, 4));
+                
+                if (fs.existsSync(INBOX_FILE)) {
+                    fs.unlinkSync(INBOX_FILE);
                 }
                 
-                context = await firefox.launchPersistentContext(ACCOUNTS_DIR, ffConfig);
-            } else {
-                if (bName === 'edge') launchConfig.channel = 'msedge';
-                else if (bName === 'chrome') launchConfig.channel = 'chrome';
-                else if (['brave', 'opera', 'vivaldi'].includes(bName)) launchConfig.executablePath = getBrowserExecutablePath(bName);
+                console.log(`[SUCCESS] Output saved! Master Router will handle the delivery.`);
                 
-                context = await chromium.launchPersistentContext(ACCOUNTS_DIR, launchConfig);
-            }
-            
-            page = context.pages()[0] || (await context.newPage());
+                currentTask = null;
+                currentOutput = "";
+                
+                await page.waitForTimeout(500); 
+                currentState = State.CONVERSATION_READY; 
+                break;
         }
-
-        page.setDefaultTimeout(0);
-
-        sendLog('connect', 'Navigating to Gemini...');
-        await page.goto('https://gemini.google.com/app', { waitUntil: 'domcontentloaded' });
-
-        sendLog('waiting', '🛑 ACTION REQUIRED: ব্রাউজারে লগইন করুন এবং চ্যাট সিলেক্ট করুন। রেডি হলে ড্যাশবোর্ড থেকে "Resume" বাটনে ক্লিক করুন!');
-        sendStatus('paused'); 
-        
-        await new Promise(resolve => { waitForUserPromise = resolve; });
-        
-        sendLog('ready', '▶️ Resume signal received! Starting automation...');
-        sendStatus('running');
-
-        let sessionPromptCount = 0;
-
-        for (let i = 0; i < prompts.length; i++) {
-            if (!isRunning) break; 
-
-            const currentPrompt = prompts[i];
-            
-            sendLog('progress', `--- 🎨 Generating Image (Prompt ${i + 1} / ${prompts.length}) ---`);
-            sendStatus('prompt', { index: i, text: currentPrompt });
-
-            const promptBox = page.locator(INPUT_SELECTOR).last(); 
-            await promptBox.waitFor({ state: 'visible', timeout: 0 });
-
-            await promptBox.click({ force: true });
-            await page.waitForTimeout(300);
-            
-            await page.keyboard.press('Control+A');
-            await page.keyboard.press('Backspace');
-            await randomDelay(300, 600);
-
-            sendLog('typing', `Typing prompt...`);
-            
-            await page.evaluate((text) => {
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-            }, currentPrompt);
-
-            await promptBox.click({ force: true });
-            await page.keyboard.press('Control+V');
-            await randomDelay(800, 1500);
-
-            await page.keyboard.press('Enter');
-
-            sendLog('generating', `[PROMPT ${i + 1}] Waiting for image generation to complete...`);
-            await randomDelay(3000, 5000); 
-            
-            const stopButtonSelector = 'button[aria-label*="Stop"]';
-            const isGenerating = await page.locator(stopButtonSelector).count();
-            if (isGenerating > 0) {
-                await page.waitForSelector(stopButtonSelector, { state: 'hidden', timeout: 0 });
-            }
-            
-            sendLog('completed', `🎉 Image generated successfully!`);
-            await randomDelay(4000, 6000); 
-
-            sendStatus('progress', { completed: i + 1, total: prompts.length });
-
-            sessionPromptCount++;
-            if (sessionPromptCount >= 8) {
-                sendLog('info', `[🔄 AUTO-REFRESH] Refreshing page to clear RAM/Memory...`);
-                await page.reload({ waitUntil: 'domcontentloaded' });
-                await randomDelay(8000, 12000); 
-                sessionPromptCount = 0; 
-            }
-        }
-
-        sendLog('ready', '✅ Automation Complete! All images generated.');
-        sendStatus('done');
-        isRunning = false;
-
-    } catch (error) {
-        sendLog('error', `Engine Crashed: ${error.message}`);
-        isRunning = false;
     }
-}
+})();
 
+// ========================================================
+// 🔴 Graceful Shutdown
+// ========================================================
 process.on('message', async (msg) => {
-    if (msg.type === 'start') {
-        startAutomation(msg.prompts);
-    } else if (msg.type === 'resume') {
-        if (waitForUserPromise) {
-            waitForUserPromise();
-            waitForUserPromise = null;
-        }
-    } else if (msg === 'shutdown' || msg.type === 'stop') {
-        isRunning = false;
-        sendLog('info', 'Shutting down engine...');
-        try { if (page) await page.close(); if (context) await context.close(); } catch(e){}
-        process.exit(0);
+    if (msg === 'shutdown') {
+        console.log(`[🛑 SHUTDOWN] Closing Gemini Worker tab...`);
+        
+        setTimeout(() => { process.exit(0); }, 2500);
+
+        try {
+            if (typeof page !== 'undefined' && page && !page.isClosed()) {
+                await page.close();
+            }
+            if (typeof browser !== 'undefined' && browser && typeof browser.disconnect === 'function') {
+                await browser.disconnect(); 
+            }
+        } catch (err) {}
+        
+        process.exit(0); 
     }
 });
